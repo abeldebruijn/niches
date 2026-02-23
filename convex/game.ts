@@ -31,6 +31,8 @@ const minTimerSeconds = 15;
 const maxTimerSeconds = 300;
 const minStars = 0;
 const maxStars = 5;
+const acceleratedAnswerWindowSeconds = 10;
+const acceleratedRatingWindowSeconds = 10;
 
 function nowInSeconds() {
   return Math.floor(Date.now() / 1000);
@@ -824,6 +826,54 @@ export const submitResponse = mutation({
     }
 
     const sanitizedAnswer = sanitizeQuestion(args.answer, "Answer");
+    const maybeAccelerateAnswerWindow = async () => {
+      if (
+        typeof server.phaseNonce !== "number" ||
+        typeof server.phaseEndsAtSec !== "number"
+      ) {
+        return;
+      }
+
+      const remainingSec = server.phaseEndsAtSec - nowSec;
+
+      if (remainingSec <= acceleratedAnswerWindowSeconds) {
+        return;
+      }
+
+      const playersInLobby = await ctx.db
+        .query("players")
+        .withIndex("by_in_server", (q) => q.eq("inServer", server._id))
+        .collect();
+      const expectedResponseCount = playersInLobby.filter(
+        (candidate) => candidate._id !== question.player,
+      ).length;
+
+      if (expectedResponseCount < 1) {
+        return;
+      }
+
+      const responses = await ctx.db
+        .query("responses")
+        .withIndex("by_question", (q) => q.eq("question", question._id))
+        .collect();
+      const submittedResponseCount = responses.filter(
+        (response) => response.responder !== question.player,
+      ).length;
+
+      if (submittedResponseCount < expectedResponseCount) {
+        return;
+      }
+
+      await ctx.db.patch(server._id, {
+        phaseEndsAtSec: nowSec + acceleratedAnswerWindowSeconds,
+      });
+      await schedulePhaseAdvance(
+        ctx,
+        server._id,
+        server.phaseNonce,
+        acceleratedAnswerWindowSeconds,
+      );
+    };
 
     const existing = await ctx.db
       .query("responses")
@@ -837,6 +887,7 @@ export const submitResponse = mutation({
         answer: sanitizedAnswer,
         updatedAtSec: nowSec,
       });
+      await maybeAccelerateAnswerWindow();
 
       return {
         submitted: true,
@@ -852,6 +903,7 @@ export const submitResponse = mutation({
       submittedAtSec: nowSec,
       updatedAtSec: nowSec,
     });
+    await maybeAccelerateAnswerWindow();
 
     return {
       submitted: true,
@@ -907,12 +959,46 @@ export const rateResponse = mutation({
 
     const correctnessStars = clampAndValidateStars(args.correctnessStars);
     const creativityStars = clampAndValidateStars(args.creativityStars);
+    const maybeAccelerateRatingWindow = async () => {
+      if (
+        typeof server.phaseNonce !== "number" ||
+        typeof server.phaseEndsAtSec !== "number"
+      ) {
+        return;
+      }
+
+      const remainingSec = server.phaseEndsAtSec - nowSec;
+
+      if (remainingSec <= acceleratedRatingWindowSeconds) {
+        return;
+      }
+
+      const responses = await ctx.db
+        .query("responses")
+        .withIndex("by_question", (q) => q.eq("question", question._id))
+        .collect();
+
+      if (responses.length < 1 || !responses.every(responseIsFullyRated)) {
+        return;
+      }
+
+      await ctx.db.patch(server._id, {
+        phaseEndsAtSec: nowSec + acceleratedRatingWindowSeconds,
+      });
+      await schedulePhaseAdvance(
+        ctx,
+        server._id,
+        server.phaseNonce,
+        acceleratedRatingWindowSeconds,
+      );
+    };
 
     await ctx.db.patch(response._id, {
       correctnessStars,
       creativityStars,
       ratedAtSec: nowSec,
     });
+    await maybeAccelerateRatingWindow();
 
     return {
       rated: true,
