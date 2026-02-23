@@ -11,269 +11,269 @@ import { QuestionBuilder } from "@/components/game/question-builder";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
 
 export default function CreatePage() {
-  const router = useRouter();
-  const createLobby = useMutation(api.game.createLobby);
-  const updateTimePerQuestion = useMutation(api.game.updateTimePerQuestion);
-  const startGame = useMutation(api.game.startGame);
-  const lobby = useQuery(api.game.currentLobby);
+	const router = useRouter();
+	const createLobby = useMutation(api.game.createLobby);
+	const updateTimePerQuestion = useMutation(api.game.updateTimePerQuestion);
+	const startGame = useMutation(api.game.startGame);
+	const lobby = useQuery(api.game.currentLobby);
 
-  const creationTriggered = useRef(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const [isSavingTime, setIsSavingTime] = useState(false);
-  const [isStarting, setIsStarting] = useState(false);
-  const [timeInput, setTimeInput] = useState("60");
+	const creationTriggered = useRef(false);
+	const [error, setError] = useState<string | null>(null);
+	const [isCreating, setIsCreating] = useState(false);
+	const [isSavingTime, setIsSavingTime] = useState(false);
+	const [isStarting, setIsStarting] = useState(false);
+	const [timeInput, setTimeInput] = useState("60");
 
-  const requestLobbyCreation = useCallback(() => {
-    setIsCreating(true);
-    setError(null);
+	const requestLobbyCreation = useCallback(() => {
+		setIsCreating(true);
+		setError(null);
 
-    void createLobby({})
-      .catch((creationError) => {
-        const message =
-          creationError instanceof Error
-            ? creationError.message
-            : "Could not create a lobby.";
-        setError(message);
-      })
-      .finally(() => {
-        setIsCreating(false);
-      });
-  }, [createLobby]);
+		void createLobby({})
+			.catch((creationError) => {
+				const message =
+					creationError instanceof Error
+						? creationError.message
+						: "Could not create a lobby.";
+				setError(message);
+			})
+			.finally(() => {
+				setIsCreating(false);
+			});
+	}, [createLobby]);
 
-  useEffect(() => {
-    if (creationTriggered.current) {
-      return;
-    }
+	useEffect(() => {
+		if (creationTriggered.current) {
+			return;
+		}
 
-    creationTriggered.current = true;
-    requestLobbyCreation();
-  }, [requestLobbyCreation]);
+		creationTriggered.current = true;
+		requestLobbyCreation();
+	}, [requestLobbyCreation]);
 
-  useEffect(() => {
-    if (!lobby) {
-      return;
-    }
+	useEffect(() => {
+		if (!lobby) {
+			return;
+		}
 
-    setTimeInput(String(lobby.timePerQuestion));
+		setTimeInput(String(lobby.timePerQuestion));
 
-    if (lobby.gameState === "PLAY") {
-      router.replace(`/${lobby.code}/play`);
-    }
-  }, [lobby, router]);
+		if (lobby.gameState === "PLAY") {
+			router.replace(`/${lobby.code}/play`);
+		}
+	}, [lobby, router]);
 
-  const handleSaveTimer = async () => {
-    if (!lobby) {
-      return;
-    }
+	const handleSaveTimer = async () => {
+		if (!lobby) {
+			return;
+		}
 
-    const parsed = Number(timeInput);
+		const parsed = Number(timeInput);
 
-    if (!Number.isFinite(parsed)) {
-      setError("Timer must be a number.");
-      return;
-    }
+		if (!Number.isFinite(parsed)) {
+			setError("Timer must be a number.");
+			return;
+		}
 
-    setIsSavingTime(true);
-    setError(null);
+		setIsSavingTime(true);
+		setError(null);
 
-    try {
-      const result = await updateTimePerQuestion({ seconds: parsed });
-      setTimeInput(String(result.seconds));
-    } catch (timerError) {
-      const message =
-        timerError instanceof Error
-          ? timerError.message
-          : "Could not update timer.";
-      setError(message);
-    } finally {
-      setIsSavingTime(false);
-    }
-  };
+		try {
+			const result = await updateTimePerQuestion({ seconds: parsed });
+			setTimeInput(String(result.seconds));
+		} catch (timerError) {
+			const message =
+				timerError instanceof Error
+					? timerError.message
+					: "Could not update timer.";
+			setError(message);
+		} finally {
+			setIsSavingTime(false);
+		}
+	};
 
-  const handleStartGame = async () => {
-    if (!lobby) {
-      return;
-    }
+	const handleStartGame = async () => {
+		if (!lobby) {
+			return;
+		}
 
-    setIsStarting(true);
-    setError(null);
+		setIsStarting(true);
+		setError(null);
 
-    try {
-      const result = await startGame({});
-      router.replace(`/${result.code}/play`);
-    } catch (startError) {
-      const message =
-        startError instanceof Error ? startError.message : "Could not start game.";
-      setError(message);
-    } finally {
-      setIsStarting(false);
-    }
-  };
+		try {
+			const result = await startGame({});
+			router.replace(`/${result.code}/play`);
+		} catch (startError) {
+			const message =
+				startError instanceof Error
+					? startError.message
+					: "Could not start game.";
+			setError(message);
+		} finally {
+			setIsStarting(false);
+		}
+	};
 
-  if (lobby === undefined || isCreating) {
-    return (
-      <main className="grid min-h-screen place-items-center px-4">
-        <p className="rounded-full border border-foreground/20 bg-white/90 px-4 py-2 text-sm font-semibold text-foreground/70">
-          Creating your lobby...
-        </p>
-      </main>
-    );
-  }
+	if (lobby === undefined || isCreating) {
+		return (
+			<main className="grid min-h-screen place-items-center px-4">
+				<p className="rounded-full border border-foreground/20 bg-white/90 px-4 py-2 text-sm font-semibold text-foreground/70">
+					Creating your lobby...
+				</p>
+			</main>
+		);
+	}
 
-  if (!lobby) {
-    return (
-      <main className="grid min-h-screen place-items-center px-4">
-        <Card className="w-full max-w-md border-2 border-foreground/10 bg-white/90">
-          <CardHeader>
-            <CardTitle>Lobby unavailable</CardTitle>
-            <CardDescription>
-              We could not load your lobby. Try creating it again.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button
-              className="w-full rounded-full"
-              onClick={() => {
-                requestLobbyCreation();
-              }}
-            >
-              Retry
-            </Button>
-          </CardContent>
-        </Card>
-      </main>
-    );
-  }
+	if (!lobby) {
+		return (
+			<main className="grid min-h-screen place-items-center px-4">
+				<Card className="w-full max-w-md border-2 border-foreground/10 bg-white/90">
+					<CardHeader>
+						<CardTitle>Lobby unavailable</CardTitle>
+						<CardDescription>
+							We could not load your lobby. Try creating it again.
+						</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<Button
+							className="w-full rounded-full"
+							onClick={() => {
+								requestLobbyCreation();
+							}}
+						>
+							Retry
+						</Button>
+					</CardContent>
+				</Card>
+			</main>
+		);
+	}
 
-  return (
-    <AppShell
-      title="Host Setup"
-      subtitle="Share your 6-digit code, tune timer settings, and make sure everyone submits all 3 questions."
-      username={lobby.viewer.username}
-      backHref="/"
-      backLabel="Home"
-      accent="bg-[#ffd18a]"
-    >
-      <Card className="border-2 border-foreground/10 bg-white/85">
-        <CardHeader>
-          <CardTitle className="text-xl">Lobby code</CardTitle>
-          <CardDescription>
-            Invite players with this 6-digit code.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap items-center gap-3">
-          <div className="rounded-2xl border-2 border-foreground/20 bg-white px-4 py-2 font-mono text-3xl font-black tracking-[0.2em] text-foreground">
-            {lobby.code}
-          </div>
-          <Badge className="border border-foreground/20 bg-[#b7ffcf] text-foreground">
-            Host view
-          </Badge>
-          <Badge variant="outline" className="border-foreground/20 text-foreground/70">
-            {lobby.players.length} players
-          </Badge>
-        </CardContent>
-      </Card>
+	return (
+		<div className="container mx-auto px-4 py-6 space-y-4">
+			<Card className="border-2 border-foreground/10 bg-white/85 sticky top-6 backdrop-blur z-10 ">
+				<CardContent className="flex justify-between items-start gap-4 flex-col sm:flex-row">
+					<div className="flex flex-wrap items-center gap-3">
+						<CardTitle className="text-xl">Lobby code:</CardTitle>
+						<div className="rounded-2xl border-2 border-foreground/20 bg-white px-4 py-2 font-mono text-3xl font-black tracking-[0.2em] text-foreground">
+							{lobby.code}
+						</div>
+						<Badge className="border border-foreground/20 bg-[#b7ffcf] text-foreground">
+							Host view
+						</Badge>
+						<Badge
+							variant="outline"
+							className="border-foreground/20 text-foreground/70"
+						>
+							{lobby.players.length} players
+						</Badge>
+						<CardDescription className="hidden sm:block">
+							Invite players with this 6-digit code.
+						</CardDescription>
+					</div>
 
-      <section className="grid gap-4 lg:grid-cols-[1.05fr_1fr]">
-        <LobbyRoster players={lobby.players} />
+					<div className="flex flex-wrap items-center gap-3">
+						<Button
+							type="button"
+							className="w-full rounded-full"
+							disabled={!lobby.canStart || isStarting}
+							onClick={() => {
+								void handleStartGame();
+							}}
+						>
+							{isStarting ? (
+								<>
+									<Loader2 className="size-4 animate-spin" />
+									Starting
+								</>
+							) : (
+								<>
+									<Rocket className="size-4" />
+									Start game
+								</>
+							)}
+						</Button>
 
-        <Card className="border-2 border-foreground/10 bg-white/85">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <Timer className="size-5" />
-              Time per question
-            </CardTitle>
-            <CardDescription>
-              Default is 60 seconds. Allowed range: 15-300 seconds.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="timer">Seconds</Label>
-              <Input
-                id="timer"
-                type="number"
-                min={15}
-                max={300}
-                value={timeInput}
-                onChange={(event) => {
-                  setTimeInput(event.target.value);
-                }}
-              />
-            </div>
+						{!lobby.canStart ? (
+							<p className="text-sm text-foreground/70">
+								Start unlocks when there are at least 2 players and everyone has
+								easy, medium and hard questions saved.
+							</p>
+						) : null}
+					</div>
+				</CardContent>
+			</Card>
 
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full rounded-full border-2"
-              disabled={isSavingTime}
-              onClick={() => {
-                void handleSaveTimer();
-              }}
-            >
-              {isSavingTime ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Saving timer
-                </>
-              ) : (
-                "Save timer"
-              )}
-            </Button>
+			<section className="grid gap-4 lg:grid-cols-[1.05fr_1fr]">
+				<LobbyRoster players={lobby.players} />
 
-            <Button
-              type="button"
-              className="w-full rounded-full"
-              disabled={!lobby.canStart || isStarting}
-              onClick={() => {
-                void handleStartGame();
-              }}
-            >
-              {isStarting ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Starting
-                </>
-              ) : (
-                <>
-                  <Rocket className="size-4" />
-                  Start game
-                </>
-              )}
-            </Button>
+				<Card className="border-2 border-foreground/10 bg-white/85">
+					<CardHeader>
+						<CardTitle className="flex items-center gap-2 text-xl">
+							<Timer className="size-5" />
+							Time per question
+						</CardTitle>
+						<CardDescription>
+							Default is 60 seconds. Allowed range: 15-300 seconds.
+						</CardDescription>
+					</CardHeader>
+					<CardContent className="space-y-4">
+						<div className="space-y-1.5">
+							<Label htmlFor="timer">Seconds</Label>
+							<Input
+								id="timer"
+								type="number"
+								min={15}
+								max={300}
+								value={timeInput}
+								onChange={(event) => {
+									setTimeInput(event.target.value);
+								}}
+							/>
+						</div>
 
-            {!lobby.canStart ? (
-              <p className="text-sm text-foreground/70">
-                Start unlocks when there are at least 2 players and everyone has
-                easy, medium and hard questions saved.
-              </p>
-            ) : null}
-          </CardContent>
-        </Card>
-      </section>
+						<Button
+							type="button"
+							variant="outline"
+							className="w-full rounded-full border-2"
+							disabled={isSavingTime}
+							onClick={() => {
+								void handleSaveTimer();
+							}}
+						>
+							{isSavingTime ? (
+								<>
+									<Loader2 className="size-4 animate-spin" />
+									Saving timer
+								</>
+							) : (
+								"Save timer"
+							)}
+						</Button>
+					</CardContent>
+				</Card>
+			</section>
 
-      <QuestionBuilder
-        initialQuestions={lobby.viewerQuestions}
-        disabled={lobby.gameState !== "CREATE_QUESTIONS"}
-      />
+			<QuestionBuilder
+				initialQuestions={lobby.viewerQuestions}
+				disabled={lobby.gameState !== "CREATE_QUESTIONS"}
+			/>
 
-      {error ? (
-        <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </p>
-      ) : null}
-    </AppShell>
-  );
+			{error ? (
+				<p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+					{error}
+				</p>
+			) : null}
+		</div>
+	);
 }

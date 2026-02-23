@@ -126,10 +126,26 @@
     min-height: 100vh;
     background-color: var(--background);
     background-image:
-      radial-gradient(circle at 12% 8%, rgba(255, 153, 153, 0.45), transparent 40%),
-      radial-gradient(circle at 88% 12%, rgba(100, 215, 255, 0.45), transparent 42%),
-      radial-gradient(circle at 60% 92%, rgba(255, 226, 155, 0.45), transparent 36%),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.95));
+      radial-gradient(
+        circle at 12% 8%,
+        rgba(255, 153, 153, 0.45),
+        transparent 40%
+      ),
+      radial-gradient(
+        circle at 88% 12%,
+        rgba(100, 215, 255, 0.45),
+        transparent 42%
+      ),
+      radial-gradient(
+        circle at 60% 92%,
+        rgba(255, 226, 155, 0.45),
+        transparent 36%
+      ),
+      linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.65),
+        rgba(255, 255, 255, 0.95)
+      );
     font-family: var(--font-geist-sans), sans-serif;
   }
 
