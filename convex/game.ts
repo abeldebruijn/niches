@@ -335,6 +335,7 @@ export const saveQuestion = mutation({
         query: prompt,
         answer,
         player: player._id,
+        isAnswered: false,
       });
     }
 

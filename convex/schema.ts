@@ -35,5 +35,6 @@ export default defineSchema({
     query: v.string(),
     answer: v.string(),
     player: v.id("players"),
+    isAnswered: v.boolean(),
   }).index("by_player", ["player"]),
 });

@@ -33,8 +33,8 @@ export function LobbyRoster({ players }: LobbyRosterProps) {
       <CardHeader>
         <CardTitle className="text-xl">Lobby players</CardTitle>
         <CardDescription>
-          Everyone needs easy, medium and hard questions before the host can
-          start.
+          At least 2 players need to have easy, medium and hard questions before
+          the host can start.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -55,12 +55,6 @@ export function LobbyRoster({ players }: LobbyRosterProps) {
                   Host
                 </Badge>
               ) : null}
-              <Badge
-                variant="outline"
-                className="ml-auto border-foreground/20 text-foreground/70"
-              >
-                {player.score} pts
-              </Badge>
             </div>
             <Separator className="my-3" />
             <div className="flex flex-wrap gap-2 text-center text-xs sm:text-sm">
