@@ -5,6 +5,7 @@ import { Crown, Loader2, Send, SkipForward, Star, Timer } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
+
+const countdownMilestones = [10, 5, 3] as const;
 
 function formatSeconds(totalSeconds: number) {
   const safe = Math.max(0, totalSeconds);
@@ -132,6 +135,8 @@ export default function PlayScreenPage() {
   const [serverOffsetSec, setServerOffsetSec] = useState(0);
   const [, tick] = useState(0);
   const answerDraftQuestionId = useRef<Id<"questions"> | null>(null);
+  const previousCountdownKeyRef = useRef<string | null>(null);
+  const previousRemainingSecRef = useRef<number | null>(null);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -228,6 +233,47 @@ export default function PlayScreenPage() {
 
     return "Next question now";
   }, [playData?.phase]);
+
+  useEffect(() => {
+    if (!playData?.phase || !playData.question) {
+      previousCountdownKeyRef.current = null;
+      previousRemainingSecRef.current = null;
+      return;
+    }
+
+    const countdownKey = `${playData.question.id}:${playData.phase}`;
+
+    if (previousCountdownKeyRef.current !== countdownKey) {
+      previousCountdownKeyRef.current = countdownKey;
+      previousRemainingSecRef.current = remainingSec;
+      return;
+    }
+
+    const previousRemainingSec = previousRemainingSecRef.current;
+    previousRemainingSecRef.current = remainingSec;
+
+    if (previousRemainingSec === null || remainingSec <= 0) {
+      return;
+    }
+
+    const crossedMilestone = countdownMilestones.find(
+      (milestone) =>
+        previousRemainingSec > milestone && remainingSec <= milestone,
+    );
+
+    if (crossedMilestone === undefined) {
+      return;
+    }
+
+    toast.message(`${crossedMilestone} seconds left`, {
+      description:
+        playData.phase === "RATING"
+          ? "Finish your ratings before time runs out."
+          : "Finish your answer before time runs out.",
+      duration: 1800,
+      id: `countdown-${countdownKey}-${crossedMilestone}`,
+    });
+  }, [playData?.phase, playData?.question, remainingSec]);
 
   const handleSubmitAnswer = async () => {
     if (!playData) {
