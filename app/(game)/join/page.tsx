@@ -83,13 +83,7 @@ export default function JoinPage() {
 
   if (!lobby) {
     return (
-      <AppShell
-        title="Join a Lobby"
-        subtitle="Enter the host's 6-digit code to join. After joining, add your 3 questions."
-        backHref="/"
-        backLabel="Home"
-        accent="bg-[#b7ffcf]"
-      >
+      <AppShell>
         <Card className="border-2 border-foreground/10 bg-white/85">
           <CardHeader>
             <CardTitle className="text-xl">Lobby code</CardTitle>

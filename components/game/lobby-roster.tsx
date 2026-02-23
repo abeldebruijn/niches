@@ -63,7 +63,7 @@ export function LobbyRoster({ players }: LobbyRosterProps) {
               </Badge>
             </div>
             <Separator className="my-3" />
-            <div className="grid grid-cols-3 gap-2 text-center text-xs sm:text-sm">
+            <div className="flex flex-wrap gap-2 text-center text-xs sm:text-sm">
               <Badge
                 variant="outline"
                 className="justify-center rounded-xl border-foreground/20"

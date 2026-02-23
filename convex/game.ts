@@ -1,7 +1,12 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
-import { mutation, type MutationCtx, query, type QueryCtx } from "./_generated/server";
+import {
+  type MutationCtx,
+  mutation,
+  type QueryCtx,
+  query,
+} from "./_generated/server";
 import { normalizeUsername } from "./username";
 
 const difficultyValidator = v.union(
@@ -464,7 +469,7 @@ export const currentLobby = query({
       ? await ctx.db.get(player.hardQuestion)
       : null;
 
-    const everyoneReady = playersInLobby.every(
+    const everyoneReady = playersInLobby.filter(
       (candidate) =>
         !!candidate.easyQuestion &&
         !!candidate.mediumQuestion &&
@@ -479,7 +484,7 @@ export const currentLobby = query({
       canStart:
         server.hostPlayer === player._id &&
         playersInLobby.length >= 2 &&
-        everyoneReady,
+        everyoneReady.length >= 2,
       players: playersInLobby
         .sort((a, b) => a.username.localeCompare(b.username))
         .map((candidate) => ({

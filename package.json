@@ -11,7 +11,8 @@
     "start": "next start",
     "lint": "biome check",
     "lint:unsafe": "biome lint --write --unsafe",
-    "format": "biome format --write"
+    "format": "biome format --write",
+    "check": "biome check"
   },
   "dependencies": {
     "@convex-dev/auth": "^0.0.90",
