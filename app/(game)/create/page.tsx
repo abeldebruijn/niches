@@ -19,10 +19,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 
 export default function CreatePage() {
   const router = useRouter();
   const createLobby = useMutation(api.game.createLobby);
+  const kickPlayer = useMutation(api.game.kickPlayer);
   const updateTimePerQuestion = useMutation(api.game.updateTimePerQuestion);
   const startGame = useMutation(api.game.startGame);
   const lobby = useQuery(api.game.currentLobby);
@@ -32,6 +34,9 @@ export default function CreatePage() {
   const [isCreating, setIsCreating] = useState(false);
   const [isSavingTime, setIsSavingTime] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  const [kickingPlayerId, setKickingPlayerId] = useState<Id<"players"> | null>(
+    null,
+  );
   const [timeInput, setTimeInput] = useState("60");
 
   const requestLobbyCreation = useCallback(() => {
@@ -122,6 +127,28 @@ export default function CreatePage() {
       setIsStarting(false);
     }
   };
+
+  const handleKickPlayer = useCallback(
+    async (playerId: Id<"players">) => {
+      setKickingPlayerId(playerId);
+      setError(null);
+
+      try {
+        await kickPlayer({ targetPlayerId: playerId });
+      } catch (kickError) {
+        const message =
+          kickError instanceof Error
+            ? kickError.message
+            : "Could not remove player.";
+        setError(message);
+      } finally {
+        setKickingPlayerId((current) =>
+          current === playerId ? null : current,
+        );
+      }
+    },
+    [kickPlayer],
+  );
 
   if (lobby === undefined || isCreating) {
     return (
@@ -214,7 +241,14 @@ export default function CreatePage() {
       </Card>
 
       <section className="grid gap-4 lg:grid-cols-[1.05fr_1fr]">
-        <LobbyRoster players={lobby.players} />
+        <LobbyRoster
+          players={lobby.players}
+          canKickPlayers={lobby.isHost}
+          kickingPlayerId={kickingPlayerId}
+          onKickPlayer={(playerId) => {
+            void handleKickPlayer(playerId);
+          }}
+        />
 
         <Card className="border-2 border-foreground/10 bg-white/85">
           <CardHeader>

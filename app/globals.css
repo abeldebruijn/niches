@@ -1,6 +1,6 @@
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -63,7 +63,7 @@
   --muted-foreground: oklch(0.45 0.04 250);
   --accent: oklch(0.91 0.08 80);
   --accent-foreground: oklch(0.28 0.05 250);
-  --destructive: oklch(0.64 0.23 25);
+  --destructive: oklab(0.5 0.16 0.09);
   --border: oklch(0.86 0.03 85);
   --input: oklch(0.9 0.02 85);
   --ring: oklch(0.67 0.19 245 / 70%);
@@ -150,7 +150,7 @@
   }
 
   body::before {
-    content: "";
+    content: '';
     pointer-events: none;
     position: fixed;
     inset: 0;

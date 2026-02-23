@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { api } from "@/convex/_generated/api";
+import { formatGameState } from "@/lib/transform-text";
 
 export default function HomePage() {
   const viewerHome = useQuery(api.game.viewerHome);
@@ -56,7 +57,7 @@ export default function HomePage() {
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-3">
             <Badge className="border border-foreground/20 bg-white text-foreground">
-              State: {activeServer.gameState}
+              State: {formatGameState(activeServer.gameState)}
             </Badge>
             <Button asChild className="rounded-full">
               <Link href={continueHref ?? "/join"}>

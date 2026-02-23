@@ -296,6 +296,48 @@ export const updateTimePerQuestion = mutation({
   },
 });
 
+export const kickPlayer = mutation({
+  args: {
+    targetPlayerId: v.id("players"),
+  },
+  handler: async (ctx, args) => {
+    const player = await requireOrCreatePlayer(ctx);
+    const server = await requireLobbyForPlayer(ctx, player);
+
+    if (server.hostPlayer !== player._id) {
+      throw new Error("Only the host can remove players.");
+    }
+
+    if (server.gameState !== "CREATE_QUESTIONS") {
+      throw new Error("Players can only be removed before the game starts.");
+    }
+
+    if (args.targetPlayerId === player._id) {
+      throw new Error("Host cannot remove themselves.");
+    }
+
+    const targetPlayer = await ctx.db.get(args.targetPlayerId);
+
+    if (!targetPlayer || targetPlayer.inServer !== server._id) {
+      throw new Error("Player is no longer in your lobby.");
+    }
+
+    if (targetPlayer._id === server.hostPlayer) {
+      throw new Error("Host cannot be removed from the lobby.");
+    }
+
+    await ctx.db.patch(targetPlayer._id, {
+      inServer: undefined,
+      score: 0,
+      easyQuestion: undefined,
+      mediumQuestion: undefined,
+      hardQuestion: undefined,
+    });
+
+    return { removed: true };
+  },
+});
+
 export const saveQuestion = mutation({
   args: {
     difficulty: difficultyValidator,

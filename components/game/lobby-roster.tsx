@@ -1,4 +1,6 @@
+import { Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -7,9 +9,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import type { Id } from "@/convex/_generated/dataModel";
+import { cn } from "@/lib/utils";
 
 type LobbyPlayer = {
-  id: string;
+  id: Id<"players">;
   username: string;
   score: number;
   isHost: boolean;
@@ -21,13 +25,21 @@ type LobbyPlayer = {
 
 type LobbyRosterProps = {
   players: LobbyPlayer[];
+  canKickPlayers?: boolean;
+  kickingPlayerId?: Id<"players"> | null;
+  onKickPlayer?: (playerId: Id<"players">) => void;
 };
 
 function readinessLabel(value: boolean) {
   return value ? "Done" : "Pending";
 }
 
-export function LobbyRoster({ players }: LobbyRosterProps) {
+export function LobbyRoster({
+  players,
+  canKickPlayers = false,
+  kickingPlayerId = null,
+  onKickPlayer,
+}: LobbyRosterProps) {
   return (
     <Card className="border-2 border-foreground/10 bg-white/85">
       <CardHeader>
@@ -43,36 +55,76 @@ export function LobbyRoster({ players }: LobbyRosterProps) {
             key={player.id}
             className="rounded-2xl border border-foreground/15 bg-white/90 p-3"
           >
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="font-semibold">{player.username}</p>
-              {player.isYou ? (
-                <Badge className="border border-foreground/20 bg-[#b7ffcf] text-foreground">
-                  You
-                </Badge>
-              ) : null}
-              {player.isHost ? (
-                <Badge className="border border-foreground/20 bg-[#ffd18a] text-foreground">
-                  Host
-                </Badge>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-semibold">{player.username}</p>
+                {player.isYou ? (
+                  <Badge className="border border-foreground/20 bg-[#b7ffcf] text-foreground">
+                    You
+                  </Badge>
+                ) : null}
+                {player.isHost ? (
+                  <Badge className="border border-foreground/20 bg-[#ffd18a] text-foreground">
+                    Host
+                  </Badge>
+                ) : null}
+              </div>
+              {canKickPlayers &&
+              onKickPlayer &&
+              !player.isHost &&
+              !player.isYou ? (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="xs"
+                  disabled={kickingPlayerId !== null}
+                  onClick={() => {
+                    onKickPlayer(player.id);
+                  }}
+                >
+                  {kickingPlayerId === player.id ? (
+                    <>
+                      <Loader2 className="size-3 animate-spin" />
+                      Kicking
+                    </>
+                  ) : (
+                    "Kick"
+                  )}
+                </Button>
               ) : null}
             </div>
             <Separator className="my-3" />
             <div className="flex flex-wrap gap-2 text-center text-xs sm:text-sm">
               <Badge
                 variant="outline"
-                className="justify-center rounded-xl border-foreground/20"
+                className={cn(
+                  "justify-center rounded-xl border-foreground/20",
+                  player.hasEasy
+                    ? "border-green-500 bg-green-50"
+                    : "border-red-500 bg-red-50",
+                )}
               >
                 Easy: {readinessLabel(player.hasEasy)}
               </Badge>
               <Badge
                 variant="outline"
-                className="justify-center rounded-xl border-foreground/20"
+                className={cn(
+                  "justify-center rounded-xl border-foreground/20",
+                  player.hasMedium
+                    ? "border-green-500 bg-green-50"
+                    : "border-red-500 bg-red-50",
+                )}
               >
                 Medium: {readinessLabel(player.hasMedium)}
               </Badge>
               <Badge
                 variant="outline"
-                className="justify-center rounded-xl border-foreground/20"
+                className={cn(
+                  "justify-center rounded-xl border-foreground/20",
+                  player.hasHard
+                    ? "border-green-500 bg-green-50"
+                    : "border-red-500 bg-red-50",
+                )}
               >
                 Hard: {readinessLabel(player.hasHard)}
               </Badge>

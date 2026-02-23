@@ -15,6 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { api } from "@/convex/_generated/api";
+import { formatGameState } from "@/lib/transform-text";
 
 export default function PlayScreenPage() {
   const params = useParams<{ code: string }>();
@@ -85,7 +86,7 @@ export default function PlayScreenPage() {
               <p className="font-semibold text-foreground/60 text-xs uppercase tracking-[0.12em]">
                 Lobby {playData.code}
               </p>
-              <h1 className="font-[var(--font-display)] text-3xl leading-none">
+              <h1 className="font-(--font-display) text-3xl leading-none">
                 Play Screen
               </h1>
             </div>
@@ -99,7 +100,7 @@ export default function PlayScreenPage() {
                 variant="outline"
                 className="border-foreground/20 text-foreground/70"
               >
-                State: {playData.gameState}
+                State: {formatGameState(playData.gameState)}
               </Badge>
             </div>
           </div>
