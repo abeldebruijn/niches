@@ -1,10 +1,10 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { Crown, Flag, Trophy } from "lucide-react";
+import { useMutation, useQuery } from "convex/react";
+import { Crown, Flag, Loader2, LogOut, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,9 @@ export default function EndScreenPage() {
   const isCodeValid =
     Number.isInteger(code) && code >= 100000 && code <= 999999;
   const endData = useQuery(api.game.endScreen, isCodeValid ? { code } : "skip");
+  const leaveServer = useMutation(api.game.leaveServer);
+  const [isLeaving, setIsLeaving] = useState(false);
+  const [leaveError, setLeaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!endData) {
@@ -90,6 +93,22 @@ export default function EndScreenPage() {
     );
   }
 
+  const handleLeaveServer = async () => {
+    setIsLeaving(true);
+    setLeaveError(null);
+
+    try {
+      await leaveServer({});
+      router.replace("/");
+    } catch (error) {
+      setLeaveError(
+        error instanceof Error ? error.message : "Could not leave this server.",
+      );
+    } finally {
+      setIsLeaving(false);
+    }
+  };
+
   return (
     <main className="min-h-screen px-4 py-5 sm:px-6">
       <section className="mx-auto flex w-full max-w-4xl flex-col gap-4">
@@ -154,9 +173,38 @@ export default function EndScreenPage() {
           </CardContent>
         </Card>
 
-        <Button asChild className="rounded-full">
-          <Link href="/">Back to home</Link>
-        </Button>
+        <div className="flex flex-wrap gap-3">
+          <Button
+            type="button"
+            className="rounded-full"
+            disabled={isLeaving}
+            onClick={() => {
+              void handleLeaveServer();
+            }}
+          >
+            {isLeaving ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Leaving
+              </>
+            ) : (
+              <>
+                <LogOut className="size-4" />
+                Leave server
+              </>
+            )}
+          </Button>
+
+          <Button asChild variant="outline" className="rounded-full border-2">
+            <Link href="/">Back to home</Link>
+          </Button>
+        </div>
+
+        {leaveError ? (
+          <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-red-700 text-sm">
+            {leaveError}
+          </p>
+        ) : null}
       </section>
     </main>
   );

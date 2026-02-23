@@ -635,6 +635,43 @@ export const kickPlayer = mutation({
   },
 });
 
+export const leaveServer = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const player = await requireOrCreatePlayer(ctx);
+
+    if (!player.inServer) {
+      return { left: false };
+    }
+
+    const serverId = player.inServer;
+    const server = await ctx.db.get(serverId);
+
+    await ctx.db.patch(player._id, {
+      inServer: undefined,
+    });
+
+    if (server && server.hostPlayer === player._id) {
+      const remainingPlayers = await ctx.db
+        .query("players")
+        .withIndex("by_in_server", (q) => q.eq("inServer", serverId))
+        .collect();
+
+      if (remainingPlayers.length > 0) {
+        const [nextHost] = remainingPlayers.sort((a, b) =>
+          a.username.localeCompare(b.username),
+        );
+
+        await ctx.db.patch(server._id, {
+          hostPlayer: nextHost._id,
+        });
+      }
+    }
+
+    return { left: true };
+  },
+});
+
 export const saveQuestion = mutation({
   args: {
     difficulty: difficultyValidator,
