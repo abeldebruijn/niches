@@ -1,14 +1,39 @@
+import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { authTables } from "@convex-dev/auth/server";
 
-// The schema is normally optional, but Convex Auth
-// requires indexes defined on `authTables`.
-// The schema provides more precise TypeScript types.
+export const gameStateValidator = v.union(
+  v.literal("CREATE_QUESTIONS"),
+  v.literal("PLAY"),
+  v.literal("END_SCREEN"),
+);
+
 export default defineSchema({
-	...authTables,
+  ...authTables,
 
-	numbers: defineTable({
-		value: v.number(),
-	}),
+  servers: defineTable({
+    code: v.number(),
+    hostPlayer: v.id("players"),
+    gameState: gameStateValidator,
+    currentQuestion: v.optional(v.id("questions")),
+    timePerQuestion: v.number(),
+  }).index("by_code", ["code"]),
+
+  players: defineTable({
+    username: v.string(),
+    userid: v.id("users"),
+    inServer: v.optional(v.id("servers")),
+    score: v.number(),
+    easyQuestion: v.optional(v.id("questions")),
+    mediumQuestion: v.optional(v.id("questions")),
+    hardQuestion: v.optional(v.id("questions")),
+  })
+    .index("by_userid", ["userid"])
+    .index("by_in_server", ["inServer"]),
+
+  questions: defineTable({
+    query: v.string(),
+    answer: v.string(),
+    player: v.id("players"),
+  }).index("by_player", ["player"]),
 });

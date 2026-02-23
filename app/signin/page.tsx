@@ -1,118 +1,191 @@
 "use client";
 
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useConvexAuth } from "convex/react";
+import { Dice6, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import Image from "next/image";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
-export default function SignIn() {
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+const USERNAME_PATTERN = /^[A-Za-z][A-Za-z0-9_-]{2,19}$/;
+const ADJECTIVES = [
+  "Cosmic",
+  "Neon",
+  "Pixel",
+  "Whiz",
+  "Turbo",
+  "Mellow",
+  "Jazzy",
+  "Witty",
+];
+const NOUNS = [
+  "Panda",
+  "Falcon",
+  "Otter",
+  "Vortex",
+  "Wizard",
+  "Comet",
+  "Riddle",
+  "Voyager",
+];
+
+function createUsernameSuggestion() {
+  const adjective = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+  const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)];
+  const number = Math.floor(10 + Math.random() * 89);
+
+  return `${adjective}${noun}${number}`;
+}
+
+export default function SignInPage() {
+  const router = useRouter();
   const { signIn } = useAuthActions();
-  const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
+  const { isAuthenticated, isLoading } = useConvexAuth();
+
+  const [username, setUsername] = useState("CosmicOtter42");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+
+  const suggestions = useMemo(
+    () => ["NeonPanda22", "WittyFalcon57", "TurboWizard81"],
+    [],
+  );
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace("/");
+    }
+  }, [isAuthenticated, isLoading, router]);
+
+  const usernameHint = useMemo(() => {
+    if (USERNAME_PATTERN.test(username.trim())) {
+      return "Looks good.";
+    }
+
+    return "Use 3-20 chars, start with a letter, and only letters, numbers, _ or -.";
+  }, [username]);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const trimmed = username.trim();
+
+    if (!USERNAME_PATTERN.test(trimmed)) {
+      setError(
+        "Pick a creative username with 3-20 characters, starting with a letter.",
+      );
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      await signIn("anonymous", { username: trimmed });
+      router.push("/");
+    } catch (signInError) {
+      const message =
+        signInError instanceof Error
+          ? signInError.message
+          : "Could not sign in right now.";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col gap-8 w-full max-w-lg mx-auto h-screen justify-center items-center px-4">
-      <div className="text-center flex flex-col items-center gap-4">
-        <div className="flex items-center gap-6">
-          <Image
-            src="/convex.svg"
-            alt="Convex Logo"
-            width={90}
-            height={90}
-          />
-          <div className="w-px h-20 bg-slate-300 dark:bg-slate-600"></div>
-          <Image
-            src="/nextjs-icon-light-background.svg"
-            alt="Next.js Logo"
-            width={90}
-            height={90}
-            className="dark:hidden"
-          />
-          <Image
-            src="/nextjs-icon-dark-background.svg"
-            alt="Next.js Logo"
-            width={90}
-            height={90}
-            className="hidden dark:block"
-          />
-        </div>
-        <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-200">
-          Convex + Next.js + Convex Auth
-        </h1>
-        <p className="text-slate-600 dark:text-slate-400">
-          This demo uses Convex Auth for authentication, so you will need to
-          sign in or sign up to access the demo.
-        </p>
+    <main className="relative grid min-h-screen place-items-center overflow-x-hidden px-4 py-10">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -top-24 left-[-6rem] h-72 w-72 rounded-full bg-[#ff9b9b]/35 blur-3xl" />
+        <div className="absolute right-[-6rem] top-1/4 h-80 w-80 rounded-full bg-[#64d7ff]/35 blur-3xl" />
+        <div className="absolute bottom-[-8rem] left-1/3 h-96 w-96 rounded-full bg-[#ffe16b]/30 blur-3xl" />
       </div>
-      <form
-        className="flex flex-col gap-4 w-full bg-slate-100 dark:bg-slate-800 p-8 rounded-2xl shadow-xl border border-slate-300 dark:border-slate-600"
-        onSubmit={(e) => {
-          e.preventDefault();
-          setLoading(true);
-          setError(null);
-          const formData = new FormData(e.target as HTMLFormElement);
-          formData.set("flow", flow);
-          void signIn("password", formData)
-            .catch((error) => {
-              setError(error.message);
-              setLoading(false);
-            })
-            .then(() => {
-              router.push("/");
-            });
-        }}
-      >
-        <input
-          className="bg-white dark:bg-slate-900 text-foreground rounded-lg p-3 border border-slate-300 dark:border-slate-600 focus:border-slate-500 dark:focus:border-slate-400 focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-700 outline-none transition-all placeholder:text-slate-400"
-          type="email"
-          name="email"
-          placeholder="Email"
-          required
-        />
-        <div className="flex flex-col gap-1">
-          <input
-            className="bg-white dark:bg-slate-900 text-foreground rounded-lg p-3 border border-slate-300 dark:border-slate-600 focus:border-slate-500 dark:focus:border-slate-400 focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-700 outline-none transition-all placeholder:text-slate-400"
-            type="password"
-            name="password"
-            placeholder="Password"
-            minLength={8}
-            required
-          />
-          {flow === "signUp" && (
-            <p className="text-xs text-slate-500 dark:text-slate-400 px-1">
-              Password must be at least 8 characters
-            </p>
-          )}
-        </div>
-        <button
-          className="bg-slate-700 hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500 text-white font-semibold rounded-lg py-3 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-          type="submit"
-          disabled={loading}
-        >
-          {loading ? "Loading..." : flow === "signIn" ? "Sign in" : "Sign up"}
-        </button>
-        <div className="flex flex-row gap-2 text-sm justify-center">
-          <span className="text-slate-600 dark:text-slate-400">
-            {flow === "signIn"
-              ? "Don't have an account?"
-              : "Already have an account?"}
-          </span>
-          <span
-            className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 font-medium underline decoration-2 underline-offset-2 hover:no-underline cursor-pointer transition-colors"
-            onClick={() => setFlow(flow === "signIn" ? "signUp" : "signIn")}
-          >
-            {flow === "signIn" ? "Sign up" : "Sign in"}
-          </span>
-        </div>
-        {error && (
-          <div className="bg-rose-500/10 border border-rose-500/30 dark:border-rose-500/50 rounded-lg p-4">
-            <p className="text-rose-700 dark:text-rose-300 font-medium text-sm break-words">
-              Error: {error}
-            </p>
+
+      <Card className="w-full max-w-md border-2 border-foreground/10 bg-white/85 shadow-[0_18px_50px_rgba(0,0,0,0.12)]">
+        <CardHeader className="space-y-3 text-center">
+          <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-foreground/20 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-foreground/70">
+            <Sparkles className="size-3.5" />
+            Anonymous sign in
           </div>
-        )}
-      </form>
-    </div>
+          <CardTitle className="font-[var(--font-display)] text-4xl leading-none">
+            Enter the Game Lobby
+          </CardTitle>
+          <CardDescription>
+            Choose a creative username and jump straight into multiplayer setup.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <form className="space-y-4" onSubmit={(event) => void handleSubmit(event)}>
+            <div className="space-y-2">
+              <Label htmlFor="username">Creative username</Label>
+              <Input
+                id="username"
+                value={username}
+                onChange={(event) => {
+                  setUsername(event.target.value);
+                }}
+                autoComplete="off"
+                placeholder="CosmicOtter42"
+                maxLength={20}
+              />
+              <p className="text-xs text-foreground/70">{usernameHint}</p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="border-foreground/20 bg-white text-foreground">
+                Ideas:
+              </Badge>
+              {suggestions.map((suggestion) => (
+                <button
+                  key={suggestion}
+                  type="button"
+                  className="inline-flex items-center rounded-full border border-foreground/20 bg-white px-3 py-1 text-xs font-semibold text-foreground/75 transition-colors hover:bg-foreground/5"
+                  onClick={() => {
+                    setUsername(suggestion);
+                  }}
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full rounded-full border-2 border-foreground/20 bg-white"
+              onClick={() => {
+                setUsername(createUsernameSuggestion());
+              }}
+            >
+              <Dice6 className="size-4" />
+              Randomize name
+            </Button>
+
+            <Button type="submit" className="w-full rounded-full text-base" disabled={loading}>
+              {loading ? "Starting session..." : "Continue anonymously"}
+            </Button>
+
+            {error ? (
+              <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {error}
+              </p>
+            ) : null}
+          </form>
+        </CardContent>
+      </Card>
+    </main>
   );
 }
