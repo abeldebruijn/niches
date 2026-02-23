@@ -4,7 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import { Crown, Flag, Loader2, LogOut, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,8 @@ export default function EndScreenPage() {
   const leaveServer = useMutation(api.game.leaveServer);
   const [isLeaving, setIsLeaving] = useState(false);
   const [leaveError, setLeaveError] = useState<string | null>(null);
+  const winnerBadgeRefs = useRef<Record<string, HTMLSpanElement | null>>({});
+  const didLaunchConfetti = useRef(false);
 
   useEffect(() => {
     if (!endData) {
@@ -42,6 +44,86 @@ export default function EndScreenPage() {
       router.replace(endData.isHost ? "/create" : "/join");
     }
   }, [endData, router]);
+
+  useEffect(() => {
+    if (!endData || endData.gameState !== "END_SCREEN") {
+      return;
+    }
+
+    if (didLaunchConfetti.current || endData.winners.length === 0) {
+      return;
+    }
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      didLaunchConfetti.current = true;
+      return;
+    }
+
+    let canceled = false;
+    let secondBurstTimeout: number | null = null;
+    didLaunchConfetti.current = true;
+
+    const launchWinnerConfetti = async () => {
+      const { default: confetti } = await import("canvas-confetti");
+
+      if (canceled) {
+        return;
+      }
+
+      const fireBurst = (x: number, y: number, particleCount: number) => {
+        confetti({
+          particleCount,
+          spread: 72,
+          startVelocity: 45,
+          ticks: 180,
+          scalar: 0.85,
+          origin: {
+            x: Math.min(0.98, Math.max(0.02, x)),
+            y: Math.min(0.98, Math.max(0.02, y)),
+          },
+        });
+      };
+
+      const particlesPerWinner = endData.winners.length > 1 ? 60 : 100;
+
+      for (const winner of endData.winners) {
+        const badge = winnerBadgeRefs.current[winner.id];
+        if (!badge) {
+          continue;
+        }
+
+        const rect = badge.getBoundingClientRect();
+        const originX = (rect.left + rect.width / 2) / window.innerWidth;
+        const originY = (rect.top + rect.height / 2) / window.innerHeight;
+
+        fireBurst(originX, originY, particlesPerWinner);
+      }
+
+      secondBurstTimeout = window.setTimeout(() => {
+        for (const winner of endData.winners) {
+          const badge = winnerBadgeRefs.current[winner.id];
+          if (!badge) {
+            continue;
+          }
+
+          const rect = badge.getBoundingClientRect();
+          const originX = (rect.left + rect.width / 2) / window.innerWidth;
+          const originY = (rect.top + rect.height / 2) / window.innerHeight;
+
+          fireBurst(originX, originY, Math.round(particlesPerWinner * 0.6));
+        }
+      }, 380);
+    };
+
+    void launchWinnerConfetti();
+
+    return () => {
+      canceled = true;
+      if (secondBurstTimeout !== null) {
+        window.clearTimeout(secondBurstTimeout);
+      }
+    };
+  }, [endData]);
 
   if (!isCodeValid) {
     return (
@@ -123,14 +205,18 @@ export default function EndScreenPage() {
           <CardContent className="space-y-3">
             <div className="flex flex-wrap gap-2">
               {endData.winners.map((winner) => (
-                <Badge
+                <span
                   key={winner.id}
-                  className="winner-confetti border border-foreground/20 bg-[#ffe29b] text-foreground"
+                  ref={(element) => {
+                    winnerBadgeRefs.current[winner.id] = element;
+                  }}
                 >
-                  <Crown className="size-3.5" />
-                  {winner.username}
-                  <span>{winner.score} pts</span>
-                </Badge>
+                  <Badge className="border border-foreground/20 bg-[#ffe29b] text-foreground">
+                    <Crown className="size-3.5" />
+                    {winner.username}
+                    <span>{winner.score} pts</span>
+                  </Badge>
+                </span>
               ))}
             </div>
 
