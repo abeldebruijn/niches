@@ -378,6 +378,8 @@ export const saveQuestion = mutation({
         answer,
         player: player._id,
         isAnswered: false,
+        difficulty: args.difficulty.toUpperCase() as "EASY" | "MEDIUM" | "HARD",
+        server: server._id,
       });
     }
 

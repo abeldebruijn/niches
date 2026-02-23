@@ -1,4 +1,4 @@
-import { gateway, Output, streamObject, streamText } from "ai";
+import { gateway, Output, streamText } from "ai";
 import { NextResponse } from "next/server";
 import {
   generatedQuestionSchema,

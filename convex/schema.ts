@@ -35,6 +35,14 @@ export default defineSchema({
     query: v.string(),
     answer: v.string(),
     player: v.id("players"),
+    server: v.id("servers"),
+    difficulty: v.union(
+      v.literal("EASY"),
+      v.literal("MEDIUM"),
+      v.literal("HARD"),
+    ),
     isAnswered: v.boolean(),
-  }).index("by_player", ["player"]),
+  })
+    .index("by_player", ["player"])
+    .index("by_server", ["server"]),
 });
