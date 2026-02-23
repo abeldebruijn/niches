@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { Doc, Id } from "./_generated/dataModel";
-import { mutation, MutationCtx, query, QueryCtx } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
+import { mutation, type MutationCtx, query, type QueryCtx } from "./_generated/server";
 import { normalizeUsername } from "./username";
 
 const difficultyValidator = v.union(
@@ -92,10 +92,7 @@ async function requirePlayerForQuery(ctx: QueryCtx) {
   return player;
 }
 
-async function requireLobbyForPlayer(
-  ctx: MutationCtx,
-  player: Doc<"players">,
-) {
+async function requireLobbyForPlayer(ctx: MutationCtx, player: Doc<"players">) {
   if (!player.inServer) {
     throw new Error("Join or create a lobby first.");
   }
@@ -228,7 +225,11 @@ export const joinLobby = mutation({
     code: v.number(),
   },
   handler: async (ctx, args) => {
-    if (!Number.isInteger(args.code) || args.code < 100000 || args.code > 999999) {
+    if (
+      !Number.isInteger(args.code) ||
+      args.code < 100000 ||
+      args.code > 999999
+    ) {
       throw new Error("Lobby code must be a 6-digit number.");
     }
 
@@ -267,7 +268,10 @@ export const updateTimePerQuestion = mutation({
     seconds: v.number(),
   },
   handler: async (ctx, args) => {
-    const clampedSeconds = Math.max(15, Math.min(300, Math.round(args.seconds)));
+    const clampedSeconds = Math.max(
+      15,
+      Math.min(300, Math.round(args.seconds)),
+    );
     const player = await requireOrCreatePlayer(ctx);
     const server = await requireLobbyForPlayer(ctx, player);
 
@@ -366,7 +370,9 @@ export const startGame = mutation({
 
     const missingQuestions = players.find(
       (candidate) =>
-        !candidate.easyQuestion || !candidate.mediumQuestion || !candidate.hardQuestion,
+        !candidate.easyQuestion ||
+        !candidate.mediumQuestion ||
+        !candidate.hardQuestion,
     );
 
     if (missingQuestions) {
@@ -448,11 +454,15 @@ export const currentLobby = query({
       .withIndex("by_in_server", (q) => q.eq("inServer", server._id))
       .collect();
 
-    const easy = player.easyQuestion ? await ctx.db.get(player.easyQuestion) : null;
+    const easy = player.easyQuestion
+      ? await ctx.db.get(player.easyQuestion)
+      : null;
     const medium = player.mediumQuestion
       ? await ctx.db.get(player.mediumQuestion)
       : null;
-    const hard = player.hardQuestion ? await ctx.db.get(player.hardQuestion) : null;
+    const hard = player.hardQuestion
+      ? await ctx.db.get(player.hardQuestion)
+      : null;
 
     const everyoneReady = playersInLobby.every(
       (candidate) =>
@@ -526,7 +536,9 @@ export const playScreen = query({
       yourScore: player.score,
       yourUsername: player.username,
       players: playersInLobby
-        .sort((a, b) => b.score - a.score || a.username.localeCompare(b.username))
+        .sort(
+          (a, b) => b.score - a.score || a.username.localeCompare(b.username),
+        )
         .map((candidate) => ({
           id: candidate._id,
           username: candidate.username,

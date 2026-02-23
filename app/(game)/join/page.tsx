@@ -4,7 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import { Crown, Loader2, LogIn } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 
 import { AppShell } from "@/components/game/app-shell";
 import { LobbyRoster } from "@/components/game/lobby-roster";
@@ -46,7 +46,11 @@ export default function JoinPage() {
 
     const numericCode = Number(codeInput.replace(/\D/g, ""));
 
-    if (!Number.isInteger(numericCode) || numericCode < 100000 || numericCode > 999999) {
+    if (
+      !Number.isInteger(numericCode) ||
+      numericCode < 100000 ||
+      numericCode > 999999
+    ) {
       setError("Enter a valid 6-digit lobby code.");
       return;
     }
@@ -58,7 +62,9 @@ export default function JoinPage() {
       await joinLobby({ code: numericCode });
     } catch (joinError) {
       const message =
-        joinError instanceof Error ? joinError.message : "Could not join lobby.";
+        joinError instanceof Error
+          ? joinError.message
+          : "Could not join lobby.";
       setError(message);
     } finally {
       setIsJoining(false);
@@ -68,7 +74,7 @@ export default function JoinPage() {
   if (lobby === undefined) {
     return (
       <main className="grid min-h-screen place-items-center px-4">
-        <p className="rounded-full border border-foreground/20 bg-white/90 px-4 py-2 text-sm font-semibold text-foreground/70">
+        <p className="rounded-full border border-foreground/20 bg-white/90 px-4 py-2 font-semibold text-foreground/70 text-sm">
           Loading lobby data...
         </p>
       </main>
@@ -92,7 +98,10 @@ export default function JoinPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="space-y-4" onSubmit={(event) => void handleJoin(event)}>
+            <form
+              className="space-y-4"
+              onSubmit={(event) => void handleJoin(event)}
+            >
               <div className="space-y-1.5">
                 <Label htmlFor="join-code">Code</Label>
                 <Input
@@ -102,13 +111,19 @@ export default function JoinPage() {
                   maxLength={6}
                   value={codeInput}
                   onChange={(event) => {
-                    const digitsOnly = event.target.value.replace(/\D/g, "").slice(0, 6);
+                    const digitsOnly = event.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, 6);
                     setCodeInput(digitsOnly);
                   }}
                 />
               </div>
 
-              <Button type="submit" className="w-full rounded-full" disabled={isJoining}>
+              <Button
+                type="submit"
+                className="w-full rounded-full"
+                disabled={isJoining}
+              >
                 {isJoining ? (
                   <>
                     <Loader2 className="size-4 animate-spin" />
@@ -123,7 +138,7 @@ export default function JoinPage() {
               </Button>
 
               {error ? (
-                <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-red-700 text-sm">
                   {error}
                 </p>
               ) : null}
@@ -137,14 +152,7 @@ export default function JoinPage() {
   const host = lobby.players.find((player) => player.isHost);
 
   return (
-    <AppShell
-      title="Lobby Setup"
-      subtitle="Create your easy, medium, and hard question while waiting for host to launch the game."
-      username={lobby.viewer.username}
-      backHref="/"
-      backLabel="Home"
-      accent="bg-[#b7ffcf]"
-    >
+    <AppShell>
       <Card className="border-2 border-foreground/10 bg-white/85">
         <CardHeader>
           <CardTitle className="text-xl">Connected lobby</CardTitle>
@@ -159,14 +167,24 @@ export default function JoinPage() {
               Host: {host.username}
             </Badge>
           ) : null}
-          <Badge variant="outline" className="border-foreground/20 text-foreground/70">
+          <Badge
+            variant="outline"
+            className="border-foreground/20 text-foreground/70"
+          >
             Timer: {lobby.timePerQuestion}s
           </Badge>
-          <Badge variant="outline" className="border-foreground/20 text-foreground/70">
+          <Badge
+            variant="outline"
+            className="border-foreground/20 text-foreground/70"
+          >
             Players: {lobby.players.length}
           </Badge>
           {lobby.isHost ? (
-            <Button asChild variant="ghost" className="ml-auto rounded-full px-3">
+            <Button
+              asChild
+              variant="ghost"
+              className="ml-auto rounded-full px-3"
+            >
               <Link href="/create">Open host controls</Link>
             </Button>
           ) : null}
@@ -181,7 +199,7 @@ export default function JoinPage() {
       />
 
       {error ? (
-        <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm">
           {error}
         </p>
       ) : null}

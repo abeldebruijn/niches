@@ -1,4 +1,4 @@
-import * as React from "react";
+import type * as React from "react";
 import { Separator } from "radix-ui";
 
 import { cn } from "@/lib/utils";
@@ -15,7 +15,7 @@ function AppSeparator({
       decorative={decorative}
       orientation={orientation}
       className={cn(
-        "bg-border shrink-0",
+        "shrink-0 bg-border",
         orientation === "horizontal" ? "h-px w-full" : "h-full w-px",
         className,
       )}

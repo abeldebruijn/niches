@@ -19,8 +19,12 @@ import { api } from "@/convex/_generated/api";
 export default function PlayScreenPage() {
   const params = useParams<{ code: string }>();
   const code = Number(params.code);
-  const isCodeValid = Number.isInteger(code) && code >= 100000 && code <= 999999;
-  const playData = useQuery(api.game.playScreen, isCodeValid ? { code } : "skip");
+  const isCodeValid =
+    Number.isInteger(code) && code >= 100000 && code <= 999999;
+  const playData = useQuery(
+    api.game.playScreen,
+    isCodeValid ? { code } : "skip",
+  );
 
   if (!isCodeValid) {
     return (
@@ -45,7 +49,7 @@ export default function PlayScreenPage() {
   if (playData === undefined) {
     return (
       <main className="grid min-h-screen place-items-center px-4">
-        <p className="rounded-full border border-foreground/20 bg-white/90 px-4 py-2 text-sm font-semibold text-foreground/70">
+        <p className="rounded-full border border-foreground/20 bg-white/90 px-4 py-2 font-semibold text-foreground/70 text-sm">
           Opening play screen...
         </p>
       </main>
@@ -78,7 +82,7 @@ export default function PlayScreenPage() {
         <nav className="rounded-3xl border-2 border-foreground/10 bg-white/85 p-4 shadow-sm">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="space-y-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground/60">
+              <p className="font-semibold text-foreground/60 text-xs uppercase tracking-[0.12em]">
                 Lobby {playData.code}
               </p>
               <h1 className="font-[var(--font-display)] text-3xl leading-none">
@@ -91,7 +95,10 @@ export default function PlayScreenPage() {
                 <Star className="size-3.5" />
                 Your score: {playData.yourScore}
               </Badge>
-              <Badge variant="outline" className="border-foreground/20 text-foreground/70">
+              <Badge
+                variant="outline"
+                className="border-foreground/20 text-foreground/70"
+              >
                 State: {playData.gameState}
               </Badge>
             </div>
@@ -112,7 +119,7 @@ export default function PlayScreenPage() {
           </div>
         </nav>
 
-        <Card className="border-2 border-dashed border-foreground/20 bg-white/75">
+        <Card className="border-2 border-foreground/20 border-dashed bg-white/75">
           <CardHeader>
             <CardTitle className="text-xl">Gameplay coming next</CardTitle>
             <CardDescription>

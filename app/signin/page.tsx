@@ -4,7 +4,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth } from "convex/react";
 import { Dice6, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -109,13 +109,13 @@ export default function SignInPage() {
     <main className="relative grid min-h-screen place-items-center overflow-x-hidden px-4 py-10">
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute -top-24 left-[-6rem] h-72 w-72 rounded-full bg-[#ff9b9b]/35 blur-3xl" />
-        <div className="absolute right-[-6rem] top-1/4 h-80 w-80 rounded-full bg-[#64d7ff]/35 blur-3xl" />
+        <div className="absolute top-1/4 right-[-6rem] h-80 w-80 rounded-full bg-[#64d7ff]/35 blur-3xl" />
         <div className="absolute bottom-[-8rem] left-1/3 h-96 w-96 rounded-full bg-[#ffe16b]/30 blur-3xl" />
       </div>
 
       <Card className="w-full max-w-md border-2 border-foreground/10 bg-white/85 shadow-[0_18px_50px_rgba(0,0,0,0.12)]">
         <CardHeader className="space-y-3 text-center">
-          <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-foreground/20 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-foreground/70">
+          <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-foreground/20 bg-white px-3 py-1 font-semibold text-foreground/70 text-xs uppercase tracking-[0.12em]">
             <Sparkles className="size-3.5" />
             Anonymous sign in
           </div>
@@ -128,7 +128,10 @@ export default function SignInPage() {
         </CardHeader>
 
         <CardContent>
-          <form className="space-y-4" onSubmit={(event) => void handleSubmit(event)}>
+          <form
+            className="space-y-4"
+            onSubmit={(event) => void handleSubmit(event)}
+          >
             <div className="space-y-2">
               <Label htmlFor="username">Creative username</Label>
               <Input
@@ -141,18 +144,21 @@ export default function SignInPage() {
                 placeholder="CosmicOtter42"
                 maxLength={20}
               />
-              <p className="text-xs text-foreground/70">{usernameHint}</p>
+              <p className="text-foreground/70 text-xs">{usernameHint}</p>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Badge variant="outline" className="border-foreground/20 bg-white text-foreground">
+              <Badge
+                variant="outline"
+                className="border-foreground/20 bg-white text-foreground"
+              >
                 Ideas:
               </Badge>
               {suggestions.map((suggestion) => (
                 <button
                   key={suggestion}
                   type="button"
-                  className="inline-flex items-center rounded-full border border-foreground/20 bg-white px-3 py-1 text-xs font-semibold text-foreground/75 transition-colors hover:bg-foreground/5"
+                  className="inline-flex items-center rounded-full border border-foreground/20 bg-white px-3 py-1 font-semibold text-foreground/75 text-xs transition-colors hover:bg-foreground/5"
                   onClick={() => {
                     setUsername(suggestion);
                   }}
@@ -174,12 +180,16 @@ export default function SignInPage() {
               Randomize name
             </Button>
 
-            <Button type="submit" className="w-full rounded-full text-base" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full rounded-full text-base"
+              disabled={loading}
+            >
               {loading ? "Starting session..." : "Continue anonymously"}
             </Button>
 
             {error ? (
-              <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-red-700 text-sm">
                 {error}
               </p>
             ) : null}

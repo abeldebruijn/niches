@@ -45,7 +45,7 @@ export function SessionBootstrap({ children }: { children: React.ReactNode }) {
   if (!isReady) {
     return (
       <main className="grid min-h-screen place-items-center px-4">
-        <div className="rounded-full border border-foreground/20 bg-white/90 px-4 py-2 text-sm font-semibold text-foreground/70 shadow-sm">
+        <div className="rounded-full border border-foreground/20 bg-white/90 px-4 py-2 font-semibold text-foreground/70 text-sm shadow-sm">
           Preparing your player profile...
         </div>
       </main>
