@@ -125,7 +125,7 @@ export default function EndScreenPage() {
               {endData.winners.map((winner) => (
                 <Badge
                   key={winner.id}
-                  className="border border-foreground/20 bg-[#ffe29b] text-foreground"
+                  className="winner-confetti border border-foreground/20 bg-[#ffe29b] text-foreground"
                 >
                   <Crown className="size-3.5" />
                   {winner.username}

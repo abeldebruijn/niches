@@ -162,3 +162,100 @@
     z-index: -1;
   }
 }
+
+@keyframes winner-confetti-drift {
+  0% {
+    transform: translate3d(-6%, -8%, 0) rotate(-6deg);
+    opacity: 0.9;
+  }
+
+  50% {
+    transform: translate3d(6%, 8%, 0) rotate(6deg);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate3d(-4%, -6%, 0) rotate(-4deg);
+    opacity: 0.9;
+  }
+}
+
+@keyframes winner-confetti-spin {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+
+  100% {
+    transform: rotate(360deg) scale(1.02);
+  }
+}
+
+.winner-confetti {
+  position: relative;
+  isolation: isolate;
+}
+
+.winner-confetti::before,
+.winner-confetti::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: -0.7rem -1rem;
+  z-index: -1;
+  border-radius: 9999px;
+  background-repeat: no-repeat;
+}
+
+.winner-confetti::before {
+  background-image:
+    radial-gradient(circle, rgba(255, 92, 92, 0.95) 0 17%, transparent 19%),
+    radial-gradient(circle, rgba(94, 183, 255, 0.95) 0 16%, transparent 18%),
+    radial-gradient(circle, rgba(130, 232, 138, 0.95) 0 16%, transparent 18%),
+    radial-gradient(circle, rgba(250, 168, 67, 0.95) 0 15%, transparent 17%),
+    radial-gradient(circle, rgba(179, 139, 255, 0.95) 0 14%, transparent 16%),
+    radial-gradient(circle, rgba(255, 212, 102, 0.95) 0 15%, transparent 17%);
+  background-position:
+    6% 28%,
+    92% 24%,
+    18% 82%,
+    84% 76%,
+    54% 12%,
+    48% 88%;
+  background-size:
+    0.68rem 0.68rem,
+    0.64rem 0.64rem,
+    0.62rem 0.62rem,
+    0.58rem 0.58rem,
+    0.56rem 0.56rem,
+    0.6rem 0.6rem;
+  animation: winner-confetti-drift 2.8s ease-in-out infinite;
+}
+
+.winner-confetti::after {
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.95) 0 20%, transparent 22%),
+    radial-gradient(circle, rgba(255, 154, 205, 0.9) 0 16%, transparent 18%),
+    radial-gradient(circle, rgba(130, 255, 252, 0.9) 0 17%, transparent 19%),
+    radial-gradient(circle, rgba(255, 242, 130, 0.95) 0 14%, transparent 16%);
+  background-position:
+    12% 12%,
+    88% 12%,
+    10% 88%,
+    90% 88%;
+  background-size:
+    0.44rem 0.44rem,
+    0.5rem 0.5rem,
+    0.48rem 0.48rem,
+    0.46rem 0.46rem;
+  opacity: 0.95;
+  animation:
+    winner-confetti-spin 5s linear infinite,
+    winner-confetti-drift 3.6s ease-in-out infinite reverse;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .winner-confetti::before,
+  .winner-confetti::after {
+    animation: none;
+  }
+}
