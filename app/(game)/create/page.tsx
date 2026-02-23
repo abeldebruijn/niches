@@ -74,6 +74,11 @@ export default function CreatePage() {
 
     if (lobby.gameState === "PLAY") {
       router.replace(`/${lobby.code}/play`);
+      return;
+    }
+
+    if (lobby.gameState === "END_SCREEN") {
+      router.replace(`/${lobby.code}/end-screen`);
     }
   }, [lobby, router]);
 

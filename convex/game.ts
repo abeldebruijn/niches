@@ -1,7 +1,9 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
+  internalMutation,
   type MutationCtx,
   mutation,
   type QueryCtx,
@@ -16,12 +18,77 @@ const difficultyValidator = v.union(
 );
 
 type Difficulty = "easy" | "medium" | "hard";
+type RoundPhase = "ANSWERING" | "RATING";
+type QuestionDifficulty = "EASY" | "MEDIUM" | "HARD";
 
 const difficultyToField: Record<Difficulty, keyof Doc<"players">> = {
   easy: "easyQuestion",
   medium: "mediumQuestion",
   hard: "hardQuestion",
 };
+
+const minTimerSeconds = 15;
+const maxTimerSeconds = 300;
+const minStars = 0;
+const maxStars = 5;
+
+function nowInSeconds() {
+  return Math.floor(Date.now() / 1000);
+}
+
+function assertValidLobbyCode(code: number) {
+  if (!Number.isInteger(code) || code < 100000 || code > 999999) {
+    throw new Error("Lobby code must be a 6-digit number.");
+  }
+}
+
+function sanitizeQuestion(value: string, label: string) {
+  const trimmed = value.trim();
+
+  if (trimmed.length < 1) {
+    throw new Error(`${label} must be at least 1 character long.`);
+  }
+
+  return trimmed;
+}
+
+function clampAndValidateStars(raw: number) {
+  if (!Number.isFinite(raw)) {
+    throw new Error("Star rating must be a number.");
+  }
+
+  const rounded = Math.round(raw);
+
+  if (rounded < minStars || rounded > maxStars) {
+    throw new Error("Star rating must be between 0 and 5.");
+  }
+
+  return rounded;
+}
+
+function normalizeStoredStars(raw: number | undefined) {
+  if (typeof raw !== "number" || !Number.isFinite(raw)) {
+    return 0;
+  }
+
+  return Math.max(minStars, Math.min(maxStars, Math.round(raw)));
+}
+
+function responseIsFullyRated(response: Doc<"responses">) {
+  return (
+    typeof response.correctnessStars === "number" &&
+    typeof response.creativityStars === "number"
+  );
+}
+
+function shuffleInPlace<T>(values: T[]) {
+  for (let index = values.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [values[index], values[randomIndex]] = [values[randomIndex], values[index]];
+  }
+
+  return values;
+}
 
 async function requireUserId(ctx: QueryCtx | MutationCtx) {
   const userId = await getAuthUserId(ctx);
@@ -111,14 +178,23 @@ async function requireLobbyForPlayer(ctx: MutationCtx, player: Doc<"players">) {
   return server;
 }
 
-function sanitizeQuestion(value: string, label: string) {
-  const trimmed = value.trim();
+async function requireServerForPlayerByCode(
+  ctx: MutationCtx,
+  player: Doc<"players">,
+  code: number,
+) {
+  assertValidLobbyCode(code);
 
-  if (trimmed.length < 1) {
-    throw new Error(`${label} must be at least 1 character long.`);
+  const server = await ctx.db
+    .query("servers")
+    .withIndex("by_code", (q) => q.eq("code", code))
+    .unique();
+
+  if (!server || !player.inServer || server._id !== player.inServer) {
+    throw new Error("You are not currently in this lobby.");
   }
 
-  return trimmed;
+  return server;
 }
 
 async function generateUniqueLobbyCode(ctx: MutationCtx) {
@@ -135,6 +211,231 @@ async function generateUniqueLobbyCode(ctx: MutationCtx) {
   }
 
   throw new Error("Could not allocate a unique lobby code. Try again.");
+}
+
+function questionDurationSeconds(phase: RoundPhase, timePerQuestion: number) {
+  return phase === "RATING" ? timePerQuestion * 2 : timePerQuestion;
+}
+
+async function schedulePhaseAdvance(
+  ctx: MutationCtx,
+  serverId: Id<"servers">,
+  expectedNonce: number,
+  delaySeconds: number,
+) {
+  const clampedDelayMs = Math.max(0, Math.round(delaySeconds * 1000));
+
+  await ctx.scheduler.runAfter(
+    clampedDelayMs,
+    internal.game.advancePhaseOnTimer,
+    {
+      serverId,
+      expectedNonce,
+    },
+  );
+}
+
+async function ensureCurrentQuestion(
+  ctx: MutationCtx,
+  server: Doc<"servers">,
+  label: string,
+) {
+  if (!server.currentQuestion) {
+    throw new Error(`${label} is missing the active question.`);
+  }
+
+  const question = await ctx.db.get(server.currentQuestion);
+
+  if (!question) {
+    throw new Error(`${label} active question no longer exists.`);
+  }
+
+  return question;
+}
+
+async function startAnsweringPhase(
+  ctx: MutationCtx,
+  server: Doc<"servers">,
+  questionId: Id<"questions">,
+  questionCursor: number,
+  nextNonce: number,
+  startedAtSec: number,
+) {
+  const endsAtSec =
+    startedAtSec + questionDurationSeconds("ANSWERING", server.timePerQuestion);
+
+  await ctx.db.patch(server._id, {
+    currentQuestion: questionId,
+    questionCursor,
+    phase: "ANSWERING",
+    phaseStartedAtSec: startedAtSec,
+    phaseEndsAtSec: endsAtSec,
+    phaseNonce: nextNonce,
+  });
+
+  await schedulePhaseAdvance(
+    ctx,
+    server._id,
+    nextNonce,
+    Math.max(0, endsAtSec - startedAtSec),
+  );
+}
+
+async function startRatingPhase(
+  ctx: MutationCtx,
+  server: Doc<"servers">,
+  nextNonce: number,
+  startedAtSec: number,
+) {
+  const endsAtSec =
+    startedAtSec + questionDurationSeconds("RATING", server.timePerQuestion);
+
+  await ctx.db.patch(server._id, {
+    phase: "RATING",
+    phaseStartedAtSec: startedAtSec,
+    phaseEndsAtSec: endsAtSec,
+    phaseNonce: nextNonce,
+  });
+
+  await schedulePhaseAdvance(
+    ctx,
+    server._id,
+    nextNonce,
+    Math.max(0, endsAtSec - startedAtSec),
+  );
+}
+
+async function finalizeRatingPhase(
+  ctx: MutationCtx,
+  server: Doc<"servers">,
+  question: Doc<"questions">,
+  nextNonce: number,
+  nowSec: number,
+) {
+  const responses = await ctx.db
+    .query("responses")
+    .withIndex("by_question", (q) => q.eq("question", question._id))
+    .collect();
+
+  const pointsByResponder = new Map<Id<"players">, number>();
+
+  for (const response of responses) {
+    const correctness = normalizeStoredStars(response.correctnessStars);
+    const creativity = normalizeStoredStars(response.creativityStars);
+    const points = correctness + creativity;
+
+    if (
+      response.correctnessStars !== correctness ||
+      response.creativityStars !== creativity ||
+      typeof response.ratedAtSec !== "number"
+    ) {
+      await ctx.db.patch(response._id, {
+        correctnessStars: correctness,
+        creativityStars: creativity,
+        ratedAtSec: response.ratedAtSec ?? nowSec,
+      });
+    }
+
+    const running = pointsByResponder.get(response.responder) ?? 0;
+    pointsByResponder.set(response.responder, running + points);
+  }
+
+  for (const [responderId, earnedPoints] of pointsByResponder.entries()) {
+    if (earnedPoints < 1) {
+      continue;
+    }
+
+    const responder = await ctx.db.get(responderId);
+
+    if (!responder || responder.inServer !== server._id) {
+      continue;
+    }
+
+    await ctx.db.patch(responder._id, {
+      score: responder.score + earnedPoints,
+    });
+  }
+
+  await ctx.db.patch(question._id, {
+    isAnswered: true,
+  });
+
+  const questionOrder = server.questionOrder ?? [];
+  const currentCursor = server.questionCursor ?? 0;
+  const nextCursor = currentCursor + 1;
+
+  if (nextCursor >= questionOrder.length) {
+    await ctx.db.patch(server._id, {
+      gameState: "END_SCREEN",
+      currentQuestion: undefined,
+      questionCursor: questionOrder.length,
+      phase: undefined,
+      phaseStartedAtSec: undefined,
+      phaseEndsAtSec: undefined,
+      phaseNonce: nextNonce,
+    });
+
+    return;
+  }
+
+  const nextQuestionId = questionOrder[nextCursor];
+  await startAnsweringPhase(
+    ctx,
+    server,
+    nextQuestionId,
+    nextCursor,
+    nextNonce,
+    nowSec,
+  );
+}
+
+async function advanceRoundPhase(
+  ctx: MutationCtx,
+  serverId: Id<"servers">,
+  expectedNonce: number,
+) {
+  const server = await ctx.db.get(serverId);
+
+  if (!server || server.gameState !== "PLAY") {
+    return { advanced: false, reason: "not_in_play" as const };
+  }
+
+  if (
+    typeof server.phaseNonce !== "number" ||
+    server.phaseNonce !== expectedNonce
+  ) {
+    return { advanced: false, reason: "stale_nonce" as const };
+  }
+
+  if (!server.phase || !server.currentQuestion) {
+    return { advanced: false, reason: "missing_phase_state" as const };
+  }
+
+  const question = await ctx.db.get(server.currentQuestion);
+
+  if (!question) {
+    await ctx.db.patch(server._id, {
+      gameState: "END_SCREEN",
+      currentQuestion: undefined,
+      phase: undefined,
+      phaseStartedAtSec: undefined,
+      phaseEndsAtSec: undefined,
+      phaseNonce: server.phaseNonce + 1,
+    });
+
+    return { advanced: false, reason: "missing_question" as const };
+  }
+
+  const nextNonce = server.phaseNonce + 1;
+  const nowSec = nowInSeconds();
+
+  if (server.phase === "ANSWERING") {
+    await startRatingPhase(ctx, server, nextNonce, nowSec);
+    return { advanced: true, phase: "RATING" as const };
+  }
+
+  await finalizeRatingPhase(ctx, server, question, nextNonce, nowSec);
+  return { advanced: true, phase: "ANSWERING_OR_END" as const };
 }
 
 export const ensurePlayer = mutation({
@@ -230,13 +531,7 @@ export const joinLobby = mutation({
     code: v.number(),
   },
   handler: async (ctx, args) => {
-    if (
-      !Number.isInteger(args.code) ||
-      args.code < 100000 ||
-      args.code > 999999
-    ) {
-      throw new Error("Lobby code must be a 6-digit number.");
-    }
+    assertValidLobbyCode(args.code);
 
     const player = await requireOrCreatePlayer(ctx);
     const server = await ctx.db
@@ -274,8 +569,8 @@ export const updateTimePerQuestion = mutation({
   },
   handler: async (ctx, args) => {
     const clampedSeconds = Math.max(
-      15,
-      Math.min(300, Math.round(args.seconds)),
+      minTimerSeconds,
+      Math.min(maxTimerSeconds, Math.round(args.seconds)),
     );
     const player = await requireOrCreatePlayer(ctx);
     const server = await requireLobbyForPlayer(ctx, player);
@@ -366,6 +661,7 @@ export const saveQuestion = mutation({
         await ctx.db.patch(questionId, {
           query: prompt,
           answer,
+          isAnswered: false,
         });
       } else {
         questionId = undefined;
@@ -378,7 +674,7 @@ export const saveQuestion = mutation({
         answer,
         player: player._id,
         isAnswered: false,
-        difficulty: args.difficulty.toUpperCase() as "EASY" | "MEDIUM" | "HARD",
+        difficulty: args.difficulty.toUpperCase() as QuestionDifficulty,
         server: server._id,
       });
     }
@@ -431,11 +727,255 @@ export const startGame = mutation({
       );
     }
 
+    const unresolvedQuestions = (
+      await ctx.db
+        .query("questions")
+        .withIndex("by_server", (q) => q.eq("server", server._id))
+        .collect()
+    ).filter((question) => !question.isAnswered);
+
+    if (unresolvedQuestions.length < 1) {
+      throw new Error(
+        "No unanswered questions are available to start this game.",
+      );
+    }
+
+    const easy = shuffleInPlace(
+      unresolvedQuestions
+        .filter((question) => question.difficulty === "EASY")
+        .map((question) => question._id),
+    );
+    const medium = shuffleInPlace(
+      unresolvedQuestions
+        .filter((question) => question.difficulty === "MEDIUM")
+        .map((question) => question._id),
+    );
+    const hard = shuffleInPlace(
+      unresolvedQuestions
+        .filter((question) => question.difficulty === "HARD")
+        .map((question) => question._id),
+    );
+
+    const orderedQuestions = [...easy, ...medium, ...hard];
+
+    if (orderedQuestions.length < 1) {
+      throw new Error("No valid questions were found for this game.");
+    }
+
+    const startedAtSec = nowInSeconds();
+    const phaseNonce = 1;
+    const endsAtSec =
+      startedAtSec +
+      questionDurationSeconds("ANSWERING", server.timePerQuestion);
+
     await ctx.db.patch(server._id, {
       gameState: "PLAY",
+      questionOrder: orderedQuestions,
+      questionCursor: 0,
+      currentQuestion: orderedQuestions[0],
+      phase: "ANSWERING",
+      phaseStartedAtSec: startedAtSec,
+      phaseEndsAtSec: endsAtSec,
+      phaseNonce,
     });
 
+    await schedulePhaseAdvance(
+      ctx,
+      server._id,
+      phaseNonce,
+      Math.max(0, endsAtSec - startedAtSec),
+    );
+
     return { code: server.code };
+  },
+});
+
+export const submitResponse = mutation({
+  args: {
+    code: v.number(),
+    answer: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const player = await requireOrCreatePlayer(ctx);
+    const server = await requireServerForPlayerByCode(ctx, player, args.code);
+
+    if (server.gameState !== "PLAY") {
+      throw new Error("This game is not currently in play mode.");
+    }
+
+    if (
+      server.phase !== "ANSWERING" ||
+      typeof server.phaseEndsAtSec !== "number" ||
+      !server.currentQuestion
+    ) {
+      throw new Error("The answer window is currently closed.");
+    }
+
+    const nowSec = nowInSeconds();
+
+    if (nowSec >= server.phaseEndsAtSec) {
+      throw new Error("The answer timer for this question has ended.");
+    }
+
+    const question = await ensureCurrentQuestion(ctx, server, "Play state");
+
+    if (question.player === player._id) {
+      throw new Error("You cannot answer your own question.");
+    }
+
+    const sanitizedAnswer = sanitizeQuestion(args.answer, "Answer");
+
+    const existing = await ctx.db
+      .query("responses")
+      .withIndex("by_question_responder", (q) =>
+        q.eq("question", question._id).eq("responder", player._id),
+      )
+      .unique();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        answer: sanitizedAnswer,
+        updatedAtSec: nowSec,
+      });
+
+      return {
+        submitted: true,
+        updatedAtSec: nowSec,
+      };
+    }
+
+    await ctx.db.insert("responses", {
+      server: server._id,
+      question: question._id,
+      responder: player._id,
+      answer: sanitizedAnswer,
+      submittedAtSec: nowSec,
+      updatedAtSec: nowSec,
+    });
+
+    return {
+      submitted: true,
+      updatedAtSec: nowSec,
+    };
+  },
+});
+
+export const rateResponse = mutation({
+  args: {
+    code: v.number(),
+    responseId: v.id("responses"),
+    correctnessStars: v.number(),
+    creativityStars: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const player = await requireOrCreatePlayer(ctx);
+    const server = await requireServerForPlayerByCode(ctx, player, args.code);
+
+    if (server.gameState !== "PLAY") {
+      throw new Error("This game is not currently in play mode.");
+    }
+
+    if (
+      server.phase !== "RATING" ||
+      typeof server.phaseEndsAtSec !== "number" ||
+      !server.currentQuestion
+    ) {
+      throw new Error("Ratings are not open right now.");
+    }
+
+    const nowSec = nowInSeconds();
+
+    if (nowSec >= server.phaseEndsAtSec) {
+      throw new Error("The rating timer for this question has ended.");
+    }
+
+    const question = await ensureCurrentQuestion(ctx, server, "Play state");
+
+    if (question.player !== player._id) {
+      throw new Error("Only the question owner can submit ratings.");
+    }
+
+    const response = await ctx.db.get(args.responseId);
+
+    if (
+      !response ||
+      response.server !== server._id ||
+      response.question !== question._id
+    ) {
+      throw new Error("This response is not part of the active question.");
+    }
+
+    const correctnessStars = clampAndValidateStars(args.correctnessStars);
+    const creativityStars = clampAndValidateStars(args.creativityStars);
+
+    await ctx.db.patch(response._id, {
+      correctnessStars,
+      creativityStars,
+      ratedAtSec: nowSec,
+    });
+
+    return {
+      rated: true,
+    };
+  },
+});
+
+export const goToNextQuestionEarly = mutation({
+  args: {
+    code: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const player = await requireOrCreatePlayer(ctx);
+    const server = await requireServerForPlayerByCode(ctx, player, args.code);
+
+    if (server.gameState !== "PLAY") {
+      throw new Error("This game is not currently in play mode.");
+    }
+
+    if (!server.phase || typeof server.phaseNonce !== "number") {
+      throw new Error("Round state is not ready for skipping.");
+    }
+
+    const isHost = server.hostPlayer === player._id;
+
+    if (!isHost) {
+      if (server.phase !== "RATING") {
+        throw new Error("Only the host can skip before ratings start.");
+      }
+
+      const question = await ensureCurrentQuestion(ctx, server, "Play state");
+
+      if (question.player !== player._id) {
+        throw new Error(
+          "Only the rating player can skip early after ratings are complete.",
+        );
+      }
+
+      const responses = await ctx.db
+        .query("responses")
+        .withIndex("by_question", (q) => q.eq("question", question._id))
+        .collect();
+
+      const allSubmittedResponsesRated = responses.every(responseIsFullyRated);
+
+      if (!allSubmittedResponsesRated) {
+        throw new Error(
+          "Rate every submitted response before moving to the next question.",
+        );
+      }
+    }
+
+    return await advanceRoundPhase(ctx, server._id, server.phaseNonce);
+  },
+});
+
+export const advancePhaseOnTimer = internalMutation({
+  args: {
+    serverId: v.id("servers"),
+    expectedNonce: v.number(),
+  },
+  handler: async (ctx, args) => {
+    return await advanceRoundPhase(ctx, args.serverId, args.expectedNonce);
   },
 });
 
@@ -580,21 +1120,217 @@ export const playScreen = query({
       .withIndex("by_in_server", (q) => q.eq("inServer", server._id))
       .collect();
 
-    return {
+    const sortedPlayers = playersInLobby
+      .sort((a, b) => b.score - a.score || a.username.localeCompare(b.username))
+      .map((candidate) => ({
+        id: candidate._id,
+        username: candidate.username,
+        score: candidate.score,
+        isHost: candidate._id === server.hostPlayer,
+        isYou: candidate._id === player._id,
+      }));
+
+    const base = {
       code: server.code,
       gameState: server.gameState,
       yourScore: player.score,
       yourUsername: player.username,
-      players: playersInLobby
-        .sort(
-          (a, b) => b.score - a.score || a.username.localeCompare(b.username),
-        )
-        .map((candidate) => ({
-          id: candidate._id,
-          username: candidate.username,
-          score: candidate.score,
-          isHost: candidate._id === server.hostPlayer,
-        })),
+      isHost: server.hostPlayer === player._id,
+      players: sortedPlayers,
+      serverNowSec: nowInSeconds(),
+    };
+
+    if (
+      server.gameState !== "PLAY" ||
+      !server.currentQuestion ||
+      !server.phase ||
+      typeof server.phaseEndsAtSec !== "number" ||
+      typeof server.phaseNonce !== "number"
+    ) {
+      return {
+        ...base,
+        phase: null,
+        phaseEndsAtSec: null,
+        phaseStartedAtSec: null,
+        phaseDurationSec: null,
+        questionProgress: null,
+        question: null,
+        role: null,
+        canGoNextEarly: false,
+        canSubmitAnswer: false,
+        canRateResponses: false,
+        rating: null,
+        answering: null,
+      };
+    }
+
+    const question = await ctx.db.get(server.currentQuestion);
+
+    if (!question) {
+      return {
+        ...base,
+        phase: server.phase,
+        phaseEndsAtSec: server.phaseEndsAtSec,
+        phaseStartedAtSec: server.phaseStartedAtSec ?? null,
+        phaseDurationSec: questionDurationSeconds(
+          server.phase,
+          server.timePerQuestion,
+        ),
+        questionProgress: null,
+        question: null,
+        role: null,
+        canGoNextEarly: false,
+        canSubmitAnswer: false,
+        canRateResponses: false,
+        rating: null,
+        answering: null,
+      };
+    }
+
+    const responses = (
+      await ctx.db
+        .query("responses")
+        .withIndex("by_question", (q) => q.eq("question", question._id))
+        .collect()
+    )
+      .filter((response) => response.responder !== question.player)
+      .sort((a, b) => a.submittedAtSec - b.submittedAtSec);
+
+    const isRatingPlayer = question.player === player._id;
+    const questionProgress = {
+      current: (server.questionCursor ?? 0) + 1,
+      total: server.questionOrder?.length ?? 1,
+    };
+
+    const nowSec = nowInSeconds();
+    const canSubmitAnswer =
+      !isRatingPlayer &&
+      server.phase === "ANSWERING" &&
+      nowSec < server.phaseEndsAtSec;
+    const canRateResponses =
+      isRatingPlayer &&
+      server.phase === "RATING" &&
+      nowSec < server.phaseEndsAtSec;
+
+    const allResponsesRated = responses.every(responseIsFullyRated);
+    const canGoNextEarly =
+      server.hostPlayer === player._id ||
+      (isRatingPlayer && server.phase === "RATING" && allResponsesRated);
+
+    const yourResponse = !isRatingPlayer
+      ? await ctx.db
+          .query("responses")
+          .withIndex("by_question_responder", (q) =>
+            q.eq("question", question._id).eq("responder", player._id),
+          )
+          .unique()
+      : null;
+
+    return {
+      ...base,
+      phase: server.phase,
+      phaseEndsAtSec: server.phaseEndsAtSec,
+      phaseStartedAtSec: server.phaseStartedAtSec ?? null,
+      phaseDurationSec: questionDurationSeconds(
+        server.phase,
+        server.timePerQuestion,
+      ),
+      questionProgress,
+      question: {
+        id: question._id,
+        query: question.query,
+        difficulty: question.difficulty,
+        canonicalAnswer: isRatingPlayer ? question.answer : null,
+      },
+      role: isRatingPlayer ? "RATING_PLAYER" : "ANSWERING_PLAYER",
+      canGoNextEarly,
+      canSubmitAnswer,
+      canRateResponses,
+      rating: isRatingPlayer
+        ? {
+            totalSubmittedResponses: responses.length,
+            allSubmittedResponsesRated: allResponsesRated,
+            responses: responses.map((response, index) => ({
+              id: response._id,
+              label: `Response ${index + 1}`,
+              answer: response.answer,
+              correctnessStars:
+                typeof response.correctnessStars === "number"
+                  ? response.correctnessStars
+                  : null,
+              creativityStars:
+                typeof response.creativityStars === "number"
+                  ? response.creativityStars
+                  : null,
+            })),
+          }
+        : null,
+      answering: !isRatingPlayer
+        ? {
+            yourResponse: yourResponse
+              ? {
+                  answer: yourResponse.answer,
+                  submittedAtSec: yourResponse.submittedAtSec,
+                  updatedAtSec: yourResponse.updatedAtSec,
+                }
+              : null,
+          }
+        : null,
+    };
+  },
+});
+
+export const endScreen = query({
+  args: {
+    code: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const player = await requirePlayerForQuery(ctx);
+
+    if (!player) {
+      return null;
+    }
+
+    const server = await ctx.db
+      .query("servers")
+      .withIndex("by_code", (q) => q.eq("code", args.code))
+      .unique();
+
+    if (!server || !player.inServer || player.inServer !== server._id) {
+      return null;
+    }
+
+    const playersInLobby = await ctx.db
+      .query("players")
+      .withIndex("by_in_server", (q) => q.eq("inServer", server._id))
+      .collect();
+
+    const standings = playersInLobby
+      .sort((a, b) => b.score - a.score || a.username.localeCompare(b.username))
+      .map((entry, index) => ({
+        id: entry._id,
+        rank: index + 1,
+        username: entry.username,
+        score: entry.score,
+        isHost: entry._id === server.hostPlayer,
+        isYou: entry._id === player._id,
+      }));
+
+    const bestScore = standings[0]?.score;
+    const winnerIds =
+      typeof bestScore === "number"
+        ? standings
+            .filter((entry) => entry.score === bestScore)
+            .map((entry) => entry.id)
+        : [];
+
+    return {
+      code: server.code,
+      gameState: server.gameState,
+      yourScore: player.score,
+      isHost: server.hostPlayer === player._id,
+      standings,
+      winners: standings.filter((entry) => winnerIds.includes(entry.id)),
     };
   },
 });

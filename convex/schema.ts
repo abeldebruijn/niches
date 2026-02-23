@@ -8,6 +8,11 @@ export const gameStateValidator = v.union(
   v.literal("END_SCREEN"),
 );
 
+export const roundPhaseValidator = v.union(
+  v.literal("ANSWERING"),
+  v.literal("RATING"),
+);
+
 export default defineSchema({
   ...authTables,
 
@@ -17,6 +22,12 @@ export default defineSchema({
     gameState: gameStateValidator,
     currentQuestion: v.optional(v.id("questions")),
     timePerQuestion: v.number(),
+    questionOrder: v.optional(v.array(v.id("questions"))),
+    questionCursor: v.optional(v.number()),
+    phase: v.optional(roundPhaseValidator),
+    phaseStartedAtSec: v.optional(v.number()),
+    phaseEndsAtSec: v.optional(v.number()),
+    phaseNonce: v.optional(v.number()),
   }).index("by_code", ["code"]),
 
   players: defineTable({
@@ -45,4 +56,18 @@ export default defineSchema({
   })
     .index("by_player", ["player"])
     .index("by_server", ["server"]),
+
+  responses: defineTable({
+    server: v.id("servers"),
+    question: v.id("questions"),
+    responder: v.id("players"),
+    answer: v.string(),
+    submittedAtSec: v.number(),
+    updatedAtSec: v.number(),
+    correctnessStars: v.optional(v.number()),
+    creativityStars: v.optional(v.number()),
+    ratedAtSec: v.optional(v.number()),
+  })
+    .index("by_question", ["question"])
+    .index("by_question_responder", ["question", "responder"]),
 });

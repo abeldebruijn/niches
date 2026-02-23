@@ -30,12 +30,15 @@ export default function HomePage() {
   }
 
   const activeServer = viewerHome?.activeServer;
-  const continueHref =
-    activeServer?.gameState === "PLAY"
-      ? `/${activeServer.code}/play`
-      : activeServer?.isHost
-        ? "/create"
-        : "/join";
+  const continueHref = (() => {
+    if (!activeServer) return "/join";
+
+    if (activeServer.gameState === "PLAY") return `/${activeServer.code}/play`;
+    if (activeServer.gameState === "END_SCREEN")
+      return `/${activeServer.code}/end-screen`;
+    if (activeServer.isHost) return "/create";
+    return "/join";
+  })();
 
   return (
     <div className="container mx-auto grid items-center space-y-4 px-4 py-6">
