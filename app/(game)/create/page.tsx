@@ -3,8 +3,10 @@
 import { useMutation, useQuery } from "convex/react";
 import { Loader2, Rocket, Timer } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Script from "next/script";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { CastLobbyControl } from "@/components/game/cast-lobby-control";
 import { LobbyRoster } from "@/components/game/lobby-roster";
 import { QuestionBuilder } from "@/components/game/question-builder";
 import { Badge } from "@/components/ui/badge";
@@ -159,120 +161,136 @@ export default function CreatePage() {
   }
 
   return (
-    <div className="container mx-auto space-y-4 px-4 py-6">
-      <Card className="sticky top-6 z-10 border-2 border-foreground/10 bg-white/85 backdrop-blur">
-        <CardContent className="flex flex-col items-start justify-between gap-4 sm:flex-row">
-          <div className="flex flex-wrap items-center gap-3">
-            <CardTitle className="text-xl">Lobby code:</CardTitle>
-            <div className="rounded-2xl border-2 border-foreground/20 bg-white px-4 py-2 font-black font-mono text-3xl text-foreground tracking-[0.2em]">
-              {lobby.code}
-            </div>
-            <Badge className="border border-foreground/20 bg-[#b7ffcf] text-foreground">
-              Host view
-            </Badge>
-            <Badge
-              variant="outline"
-              className="border-foreground/20 text-foreground/70"
-            >
-              {lobby.players.length} players
-            </Badge>
-            <CardDescription className="hidden sm:block">
-              Invite players with this 6-digit code.
-            </CardDescription>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              type="button"
-              className="w-full rounded-full"
-              disabled={!lobby.canStart || isStarting}
-              onClick={() => {
-                void handleStartGame();
-              }}
-            >
-              {isStarting ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Starting
-                </>
-              ) : (
-                <>
-                  <Rocket className="size-4" />
-                  Start game
-                </>
-              )}
-            </Button>
-
-            {!lobby.canStart ? (
-              <p className="text-foreground/70 text-sm">
-                Start unlocks when there are at least 2 players with easy,
-                medium and hard questions saved.
-              </p>
-            ) : null}
-          </div>
-        </CardContent>
-      </Card>
-
-      <section className="grid gap-4 lg:grid-cols-[1.05fr_1fr]">
-        <LobbyRoster players={lobby.players} />
-
-        <Card className="border-2 border-foreground/10 bg-white/85">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <Timer className="size-5" />
-              Time per question
-            </CardTitle>
-            <CardDescription>
-              Default is 60 seconds. Allowed range: 15-300 seconds.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="timer">Seconds</Label>
-              <Input
-                id="timer"
-                type="number"
-                min={15}
-                max={300}
-                value={timeInput}
-                onChange={(event) => {
-                  setTimeInput(event.target.value);
-                }}
-              />
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full rounded-full border-2"
-              disabled={isSavingTime}
-              onClick={() => {
-                void handleSaveTimer();
-              }}
-            >
-              {isSavingTime ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Saving timer
-                </>
-              ) : (
-                "Save timer"
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-      </section>
-
-      <QuestionBuilder
-        initialQuestions={lobby.viewerQuestions}
-        disabled={lobby.gameState !== "CREATE_QUESTIONS"}
+    <>
+      <Script
+        id="google-cast-sdk"
+        src="//www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"
+        strategy="afterInteractive"
       />
 
-      {error ? (
-        <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm">
-          {error}
-        </p>
-      ) : null}
-    </div>
+      <div className="container mx-auto space-y-4 px-4 py-6">
+        <Card className="sticky top-6 z-10 border-2 border-foreground/10 bg-white/85 backdrop-blur">
+          <CardContent className="flex flex-col items-start justify-between gap-4 sm:flex-row">
+            <div className="flex flex-wrap items-center gap-3">
+              <CardTitle className="text-xl">Lobby code:</CardTitle>
+              <div className="rounded-2xl border-2 border-foreground/20 bg-white px-4 py-2 font-black font-mono text-3xl text-foreground tracking-[0.2em]">
+                {lobby.code}
+              </div>
+              <Badge className="border border-foreground/20 bg-[#b7ffcf] text-foreground">
+                Host view
+              </Badge>
+              <Badge
+                variant="outline"
+                className="border-foreground/20 text-foreground/70"
+              >
+                {lobby.players.length} players
+              </Badge>
+              <CardDescription className="hidden sm:block">
+                Invite players with this 6-digit code.
+              </CardDescription>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <CastLobbyControl
+                canStart={lobby.canStart}
+                code={lobby.code}
+                gameState={lobby.gameState}
+                playerCount={lobby.players.length}
+                timePerQuestion={lobby.timePerQuestion}
+              />
+
+              <Button
+                type="button"
+                className="w-full rounded-full"
+                disabled={!lobby.canStart || isStarting}
+                onClick={() => {
+                  void handleStartGame();
+                }}
+              >
+                {isStarting ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Starting
+                  </>
+                ) : (
+                  <>
+                    <Rocket className="size-4" />
+                    Start game
+                  </>
+                )}
+              </Button>
+
+              {!lobby.canStart ? (
+                <p className="text-foreground/70 text-sm">
+                  Start unlocks when there are at least 2 players with easy,
+                  medium and hard questions saved.
+                </p>
+              ) : null}
+            </div>
+          </CardContent>
+        </Card>
+
+        <section className="grid gap-4 lg:grid-cols-[1.05fr_1fr]">
+          <LobbyRoster players={lobby.players} />
+
+          <Card className="border-2 border-foreground/10 bg-white/85">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Timer className="size-5" />
+                Time per question
+              </CardTitle>
+              <CardDescription>
+                Default is 60 seconds. Allowed range: 15-300 seconds.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="timer">Seconds</Label>
+                <Input
+                  id="timer"
+                  type="number"
+                  min={15}
+                  max={300}
+                  value={timeInput}
+                  onChange={(event) => {
+                    setTimeInput(event.target.value);
+                  }}
+                />
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full rounded-full border-2"
+                disabled={isSavingTime}
+                onClick={() => {
+                  void handleSaveTimer();
+                }}
+              >
+                {isSavingTime ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Saving timer
+                  </>
+                ) : (
+                  "Save timer"
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        </section>
+
+        <QuestionBuilder
+          initialQuestions={lobby.viewerQuestions}
+          disabled={lobby.gameState !== "CREATE_QUESTIONS"}
+        />
+
+        {error ? (
+          <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm">
+            {error}
+          </p>
+        ) : null}
+      </div>
+    </>
   );
 }
