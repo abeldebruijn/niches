@@ -1,8 +1,9 @@
 "use client";
 
+import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { useMutation } from "convex/react";
 import { Loader2, Sparkles } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,11 +13,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/convex/_generated/api";
+import {
+  type GeneratedQuestion,
+  generatedQuestionSchema,
+  type QuestionGenerationInput,
+  questionGenerationTopicOptions,
+} from "@/lib/question-generation";
 
 type Difficulty = "easy" | "medium" | "hard";
+type TopicChoice = (typeof questionGenerationTopicOptions)[number] | "custom";
 
 type QuestionSeed = {
   query: string;
@@ -53,6 +62,15 @@ const difficultyConfig: Record<
   },
 };
 
+const defaultTopicChoice: Record<Difficulty, TopicChoice> = {
+  easy: "General",
+  medium: "General",
+  hard: "General",
+};
+
+const selectClassName =
+  "flex h-11 w-full min-w-0 rounded-xl border border-input bg-white/90 px-3 py-2 text-base shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/60 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50";
+
 export function QuestionBuilder({
   initialQuestions,
   disabled = false,
@@ -80,6 +98,16 @@ export function QuestionBuilder({
   const [savedDifficulty, setSavedDifficulty] = useState<Difficulty | null>(
     null,
   );
+  const [generatingDifficulty, setGeneratingDifficulty] =
+    useState<Difficulty | null>(null);
+  const [topicChoice, setTopicChoice] =
+    useState<Record<Difficulty, TopicChoice>>(defaultTopicChoice);
+  const [customTopic, setCustomTopic] = useState<Record<Difficulty, string>>({
+    easy: "",
+    medium: "",
+    hard: "",
+  });
+  const generationDifficultyRef = useRef<Difficulty | null>(null);
 
   const seedHash = useMemo(
     () =>
@@ -114,7 +142,80 @@ export function QuestionBuilder({
     initialQuestions.medium,
   ]);
 
-  const handleSave = async (difficulty: Difficulty) => {
+  const {
+    object: generatedObject,
+    submit: generateQuestion,
+    isLoading: isGenerating,
+    clear: clearGeneratedObject,
+  } = useObject<
+    typeof generatedQuestionSchema,
+    GeneratedQuestion,
+    QuestionGenerationInput
+  >({
+    api: "/api/questions/generate",
+    schema: generatedQuestionSchema,
+    onError: (generationError) => {
+      generationDifficultyRef.current = null;
+      setGeneratingDifficulty(null);
+      const message =
+        generationError instanceof Error
+          ? generationError.message
+          : "Could not generate your question.";
+      setError(message);
+    },
+    onFinish: async ({ object, error: generationError }) => {
+      const targetDifficulty = generationDifficultyRef.current;
+      generationDifficultyRef.current = null;
+      setGeneratingDifficulty(null);
+
+      if (!targetDifficulty) {
+        return;
+      }
+
+      if (generationError) {
+        setError(generationError.message);
+        return;
+      }
+
+      if (!object?.query || !object?.answer) {
+        setError("The generated question was incomplete.");
+        return;
+      }
+
+      setForms((current) => ({
+        ...current,
+        [targetDifficulty]: {
+          query: object.query,
+          answer: object.answer,
+        },
+      }));
+
+      await handleSave(targetDifficulty, object);
+    },
+  });
+
+  useEffect(() => {
+    if (!generatedObject || !generatingDifficulty) {
+      return;
+    }
+
+    setForms((current) => ({
+      ...current,
+      [generatingDifficulty]: {
+        query: generatedObject.query ?? current[generatingDifficulty].query,
+        answer: generatedObject.answer ?? current[generatingDifficulty].answer,
+      },
+    }));
+  }, [generatedObject, generatingDifficulty]);
+
+  async function handleSave(difficulty: Difficulty, draft?: QuestionSeed) {
+    const questionToSave = draft ?? forms[difficulty];
+
+    if (!questionToSave.query.trim() || !questionToSave.answer.trim()) {
+      setError("Both question and answer are required.");
+      return;
+    }
+
     setSavingDifficulty(difficulty);
     setSavedDifficulty(null);
     setError(null);
@@ -122,8 +223,8 @@ export function QuestionBuilder({
     try {
       await saveQuestion({
         difficulty,
-        query: forms[difficulty].query,
-        answer: forms[difficulty].answer,
+        query: questionToSave.query,
+        answer: questionToSave.answer,
       });
       setSavedDifficulty(difficulty);
     } catch (saveError) {
@@ -135,6 +236,32 @@ export function QuestionBuilder({
     } finally {
       setSavingDifficulty(null);
     }
+  }
+
+  const handleGenerate = (difficulty: Difficulty) => {
+    const chosenTopic =
+      topicChoice[difficulty] === "custom"
+        ? customTopic[difficulty].trim()
+        : topicChoice[difficulty];
+
+    if (!chosenTopic) {
+      setError("Enter a custom topic before generating.");
+      return;
+    }
+
+    setError(null);
+    setSavedDifficulty(null);
+    setForms((current) => ({
+      ...current,
+      [difficulty]: {
+        query: "",
+        answer: "",
+      },
+    }));
+    clearGeneratedObject();
+    generationDifficultyRef.current = difficulty;
+    setGeneratingDifficulty(difficulty);
+    generateQuestion({ difficulty, topic: chosenTopic });
   };
 
   return (
@@ -190,7 +317,11 @@ export function QuestionBuilder({
                       }));
                     }}
                     placeholder={`Enter your ${difficulty} question`}
-                    disabled={disabled || isSaving}
+                    disabled={
+                      disabled ||
+                      isSaving ||
+                      (isGenerating && generatingDifficulty === difficulty)
+                    }
                   />
                 </div>
 
@@ -210,30 +341,109 @@ export function QuestionBuilder({
                       }));
                     }}
                     placeholder={`Enter the answer for your ${difficulty} question`}
-                    disabled={disabled || isSaving}
+                    disabled={
+                      disabled ||
+                      isSaving ||
+                      (isGenerating && generatingDifficulty === difficulty)
+                    }
                   />
                 </div>
 
-                <Button
-                  type="button"
-                  className="w-full rounded-full"
-                  disabled={disabled || isSaving}
-                  onClick={() => {
-                    void handleSave(difficulty);
-                  }}
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="size-4 animate-spin" />
-                      Saving
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="size-4" />
-                      Save {config.title}
-                    </>
-                  )}
-                </Button>
+                <div className="space-y-3 rounded-xl border border-foreground/10 bg-white/80 p-3">
+                  <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end">
+                    <div className="space-y-1.5">
+                      <Label htmlFor={`${difficulty}-topic`}>
+                        Topic for generated question
+                      </Label>
+                      <select
+                        id={`${difficulty}-topic`}
+                        value={topicChoice[difficulty]}
+                        onChange={(event) => {
+                          setTopicChoice((current) => ({
+                            ...current,
+                            [difficulty]: event.target.value as TopicChoice,
+                          }));
+                        }}
+                        className={selectClassName}
+                        disabled={disabled || isSaving || isGenerating}
+                      >
+                        {questionGenerationTopicOptions.map((topic) => (
+                          <option key={topic} value={topic}>
+                            {topic}
+                          </option>
+                        ))}
+                        <option value="custom">Custom</option>
+                      </select>
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="rounded-full border-2"
+                      disabled={
+                        disabled ||
+                        isSaving ||
+                        isGenerating ||
+                        (topicChoice[difficulty] === "custom" &&
+                          !customTopic[difficulty].trim())
+                      }
+                      onClick={() => {
+                        handleGenerate(difficulty);
+                      }}
+                    >
+                      {isGenerating && generatingDifficulty === difficulty ? (
+                        <>
+                          <Loader2 className="size-4 animate-spin" />
+                          Generating
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="size-4" />
+                          Generate
+                        </>
+                      )}
+                    </Button>
+
+                    <Button
+                      type="button"
+                      className="rounded-full"
+                      disabled={disabled || isSaving || isGenerating}
+                      onClick={() => {
+                        void handleSave(difficulty);
+                      }}
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="size-4 animate-spin" />
+                          Saving
+                        </>
+                      ) : (
+                        `Save ${config.title}`
+                      )}
+                    </Button>
+                  </div>
+
+                  {topicChoice[difficulty] === "custom" ? (
+                    <div className="space-y-1.5">
+                      <Label htmlFor={`${difficulty}-custom-topic`}>
+                        Custom topic
+                      </Label>
+                      <Input
+                        id={`${difficulty}-custom-topic`}
+                        value={customTopic[difficulty]}
+                        onChange={(event) => {
+                          const nextValue = event.target.value;
+                          setCustomTopic((current) => ({
+                            ...current,
+                            [difficulty]: nextValue,
+                          }));
+                        }}
+                        placeholder="Enter your own topic"
+                        disabled={disabled || isSaving || isGenerating}
+                      />
+                    </div>
+                  ) : null}
+                </div>
               </div>
             </section>
           );

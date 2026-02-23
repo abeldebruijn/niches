@@ -114,8 +114,8 @@ async function requireLobbyForPlayer(ctx: MutationCtx, player: Doc<"players">) {
 function sanitizeQuestion(value: string, label: string) {
   const trimmed = value.trim();
 
-  if (trimmed.length < 3) {
-    throw new Error(`${label} must be at least 3 characters.`);
+  if (trimmed.length < 1) {
+    throw new Error(`${label} must be at least 1 character long.`);
   }
 
   return trimmed;

@@ -15,7 +15,10 @@
     "check": "biome check"
   },
   "dependencies": {
+    "@ai-sdk/react": "^3.0.99",
+    "@base-ui/react": "^1.2.0",
     "@convex-dev/auth": "^0.0.90",
+    "ai": "^6.0.97",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "convex": "^1.31.7",
@@ -24,7 +27,8 @@
     "radix-ui": "^1.4.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.5.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.14",
