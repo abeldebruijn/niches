@@ -44,10 +44,12 @@ export default function HomePage() {
     <div className="container mx-auto grid items-center space-y-4 px-4 py-6">
       <div className="my-12">
         <h1 className="nt-mono font-bold text-3xl">Welcome to Niches</h1>
-        <p className="pt-2 text-foreground/70 text-sm">
+        <p className="pt-2 text-foreground/90">
           A game where players ask questions that are in their niche and judge
           friends answers
         </p>
+
+        <p className="pt-1 text-foreground/70 text-sm">Answers will be judged based on correctness and creativity.</p>
       </div>
 
       {activeServer ? (

@@ -108,22 +108,18 @@ export default function SignInPage() {
   return (
     <main className="relative grid min-h-screen place-items-center overflow-x-hidden px-4 py-10">
       <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute -top-24 left-[-6rem] h-72 w-72 rounded-full bg-[#ff9b9b]/35 blur-3xl" />
-        <div className="absolute top-1/4 right-[-6rem] h-80 w-80 rounded-full bg-[#64d7ff]/35 blur-3xl" />
-        <div className="absolute bottom-[-8rem] left-1/3 h-96 w-96 rounded-full bg-[#ffe16b]/30 blur-3xl" />
+        <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-[#ff9b9b]/35 blur-3xl" />
+        <div className="absolute top-1/4 -right-24 h-80 w-80 rounded-full bg-[#64d7ff]/35 blur-3xl" />
+        <div className="absolute -bottom-32 left-1/3 h-96 w-96 rounded-full bg-[#ffe16b]/30 blur-3xl" />
       </div>
 
       <Card className="w-full max-w-md border-2 border-foreground/10 bg-white/85 shadow-[0_18px_50px_rgba(0,0,0,0.12)]">
         <CardHeader className="space-y-3 text-center">
-          <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-foreground/20 bg-white px-3 py-1 font-semibold text-foreground/70 text-xs uppercase tracking-[0.12em]">
-            <Sparkles className="size-3.5" />
-            Anonymous sign in
-          </div>
-          <CardTitle className="font-[var(--font-display)] text-4xl leading-none">
-            Enter the Game Lobby
+          <CardTitle className="font-(--font-display) text-4xl leading-none">
+            Niches trivia game
           </CardTitle>
           <CardDescription>
-            Choose a creative username and jump straight into multiplayer setup.
+            The game where you create questions and challenge your friends how well they know you.
           </CardDescription>
         </CardHeader>
 
@@ -133,8 +129,8 @@ export default function SignInPage() {
             onSubmit={(event) => void handleSubmit(event)}
           >
             <div className="space-y-2">
-              <Label htmlFor="username">Creative username</Label>
-              <Input
+              <Label htmlFor="username">Choose a creative username</Label>
+                <Input
                 id="username"
                 value={username}
                 onChange={(event) => {
@@ -143,7 +139,8 @@ export default function SignInPage() {
                 autoComplete="off"
                 placeholder="CosmicOtter42"
                 maxLength={20}
-              />
+                className="placeholder:text-foreground/40"
+                />
               <p className="text-foreground/70 text-xs">{usernameHint}</p>
             </div>
 
@@ -185,7 +182,7 @@ export default function SignInPage() {
               className="w-full rounded-full text-base"
               disabled={loading}
             >
-              {loading ? "Starting session..." : "Continue anonymously"}
+              {loading ? "Starting session..." : "Continue"}
             </Button>
 
             {error ? (

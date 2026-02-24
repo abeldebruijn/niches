@@ -22,7 +22,7 @@ const monoFont = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Niches Trivia",
+  title: "Niches trivia game",
   description: "Playful multiplayer trivia setup with Convex + Next.js",
   icons: {
     icon: "/convex.svg",

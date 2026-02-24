@@ -48,12 +48,12 @@ const difficultyConfig: Record<
   easy: {
     title: "Easy",
     tint: "bg-[#b7ffcf]",
-    hint: "Warm-up level. Keep it quick and fun.",
+    hint: "Warm-up level. Keep it quick and fun. For example: Where did you go to school?",
   },
   medium: {
     title: "Medium",
     tint: "bg-[#ffe29b]",
-    hint: "Needs some thinking, but still fair.",
+    hint: "Needs some thinking, but still fair. For example: What's your go-to karaoke song?",
   },
   hard: {
     title: "Hard",
@@ -268,8 +268,8 @@ export function QuestionBuilder({
     <Card className="border-2 border-foreground/10 bg-white/85">
       <CardHeader>
         <CardTitle className="text-xl">Your 3 questions</CardTitle>
-        <CardDescription>
-          Fill in one easy, one medium and one hard question before game start.
+        <CardDescription className="sm:max-w-1/2">
+          Fill in one easy, one medium and one hard question before game start. Questions can be about anything, but should be about you! Don't worry, you can always generate some generic questions using AI or edit them later on. Answers will be judged based on correctness and creativity.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
