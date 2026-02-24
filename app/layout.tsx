@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import { Baloo_2, JetBrains_Mono, Manrope } from "next/font/google";
 
 import ConvexClientProvider from "@/components/ConvexClientProvider";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
-import { Toaster } from "sonner";
 
 const bodyFont = Manrope({
   variable: "--font-geist-sans",
@@ -41,8 +41,7 @@ export default function RootLayout({
           className={`${bodyFont.variable} ${displayFont.variable} ${monoFont.variable} antialiased`}
         >
           <ConvexClientProvider>{children}</ConvexClientProvider>
-
-           <Toaster />
+          <Toaster />
         </body>
       </html>
     </ConvexAuthNextjsServerProvider>
