@@ -128,7 +128,7 @@ export default function EndScreenPage() {
   if (!isCodeValid) {
     return (
       <main className="grid min-h-screen place-items-center px-4">
-        <Card className="w-full max-w-md border-2 border-foreground/10 bg-white/90">
+        <Card className="w-full max-w-md border-2 border-foreground/10 bg-card/90">
           <CardHeader>
             <CardTitle>Invalid game URL</CardTitle>
             <CardDescription>
@@ -148,7 +148,7 @@ export default function EndScreenPage() {
   if (endData === undefined) {
     return (
       <main className="grid min-h-screen place-items-center px-4">
-        <p className="rounded-full border border-foreground/20 bg-white/90 px-4 py-2 font-semibold text-foreground/70 text-sm">
+        <p className="rounded-full border border-foreground/20 bg-card/90 px-4 py-2 font-semibold text-foreground/70 text-sm">
           Loading end screen...
         </p>
       </main>
@@ -158,7 +158,7 @@ export default function EndScreenPage() {
   if (!endData) {
     return (
       <main className="grid min-h-screen place-items-center px-4">
-        <Card className="w-full max-w-md border-2 border-foreground/10 bg-white/90">
+        <Card className="w-full max-w-md border-2 border-foreground/10 bg-card/90">
           <CardHeader>
             <CardTitle>Game not found</CardTitle>
             <CardDescription>
@@ -194,7 +194,7 @@ export default function EndScreenPage() {
   return (
     <main className="min-h-screen px-4 py-5 sm:px-6">
       <section className="mx-auto flex w-full max-w-4xl flex-col gap-4">
-        <Card className="border-2 border-foreground/10 bg-white/85">
+        <Card className="border-2 border-foreground/10 bg-card/85">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-2xl">
               <Trophy className="size-6" />
@@ -211,7 +211,7 @@ export default function EndScreenPage() {
                     winnerBadgeRefs.current[winner.id] = element;
                   }}
                 >
-                  <Badge className="border border-foreground/20 bg-[#ffe29b] text-foreground">
+                  <Badge className="border border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-400/50 dark:bg-amber-500/20 dark:text-amber-100">
                     <Crown className="size-3.5" />
                     {winner.username}
                     <span>{winner.score} pts</span>
@@ -228,7 +228,7 @@ export default function EndScreenPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-2 border-foreground/10 bg-white/85">
+        <Card className="border-2 border-foreground/10 bg-card/85">
           <CardHeader>
             <CardTitle className="text-xl">Leaderboard</CardTitle>
             <CardDescription>
@@ -239,14 +239,14 @@ export default function EndScreenPage() {
             {endData.standings.map((player) => (
               <div
                 key={player.id}
-                className="flex items-center justify-between rounded-xl border border-foreground/15 bg-white/90 px-3 py-2"
+                className="flex items-center justify-between rounded-xl border border-foreground/15 bg-card/90 px-3 py-2"
               >
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-sm">#{player.rank}</span>
                   <span className="font-semibold">{player.username}</span>
                   {player.isHost ? <Flag className="size-3.5" /> : null}
                   {player.isYou ? (
-                    <Badge className="border border-foreground/20 bg-[#b7ffcf] text-foreground">
+                    <Badge className="border border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-400/50 dark:bg-emerald-500/20 dark:text-emerald-100">
                       You
                     </Badge>
                   ) : null}
@@ -287,7 +287,7 @@ export default function EndScreenPage() {
         </div>
 
         {leaveError ? (
-          <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-red-700 text-sm">
+          <p className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-destructive text-sm">
             {leaveError}
           </p>
         ) : null}

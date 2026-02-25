@@ -34,7 +34,7 @@ export function SessionBootstrap({ children }: { children: React.ReactNode }) {
   if (error) {
     return (
       <main className="grid min-h-screen place-items-center px-4 text-center">
-        <div className="max-w-sm rounded-3xl border border-red-200 bg-red-50 p-6 text-red-700">
+        <div className="max-w-sm rounded-3xl border border-destructive/40 bg-destructive/10 p-6 text-destructive">
           <p className="font-semibold">Could not start your session</p>
           <p className="mt-2 text-sm">{error}</p>
         </div>
@@ -45,7 +45,7 @@ export function SessionBootstrap({ children }: { children: React.ReactNode }) {
   if (!isReady) {
     return (
       <main className="grid min-h-screen place-items-center px-4">
-        <div className="rounded-full border border-foreground/20 bg-white/90 px-4 py-2 font-semibold text-foreground/70 text-sm shadow-sm">
+        <div className="rounded-full border border-foreground/20 bg-card/90 px-4 py-2 font-semibold text-foreground/70 text-sm shadow-sm">
           Preparing your player profile...
         </div>
       </main>

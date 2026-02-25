@@ -22,7 +22,7 @@ export default function HomePage() {
   if (viewerHome === undefined) {
     return (
       <main className="grid min-h-screen place-items-center px-4">
-        <p className="rounded-full border border-foreground/20 bg-white/90 px-4 py-2 font-semibold text-foreground/70 text-sm">
+        <p className="rounded-full border border-foreground/20 bg-card/90 px-4 py-2 font-semibold text-foreground/70 text-sm">
           Loading lobby options...
         </p>
       </main>
@@ -49,11 +49,13 @@ export default function HomePage() {
           friends answers
         </p>
 
-        <p className="pt-1 text-foreground/70 text-sm">Answers will be judged based on correctness and creativity.</p>
+        <p className="pt-1 text-foreground/70 text-sm">
+          Answers will be judged based on correctness and creativity.
+        </p>
       </div>
 
       {activeServer ? (
-        <Card className="border-2 border-foreground/10 bg-white/85">
+        <Card className="border-2 border-foreground/10 bg-card/85">
           <CardHeader className="space-y-1">
             <CardTitle className="text-xl">Current lobby detected</CardTitle>
             <CardDescription>
@@ -61,7 +63,7 @@ export default function HomePage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-3">
-            <Badge className="border border-foreground/20 bg-white text-foreground">
+            <Badge className="border border-foreground/20 bg-background/75 text-foreground">
               State: {formatGameState(activeServer.gameState)}
             </Badge>
             <Button asChild className="rounded-full">
@@ -75,7 +77,7 @@ export default function HomePage() {
       ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <Card className="border-2 border-foreground/10 bg-white/85">
+        <Card className="border-2 border-foreground/10 bg-card/85">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl">
               <PlusCircle className="size-5" />
@@ -93,7 +95,7 @@ export default function HomePage() {
           </CardContent>
         </Card>
 
-        <Card className="border-2 border-foreground/10 bg-white/85">
+        <Card className="border-2 border-foreground/10 bg-card/85">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl">
               <Users className="size-5" />

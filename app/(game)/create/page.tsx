@@ -158,7 +158,7 @@ export default function CreatePage() {
   if (lobby === undefined || isCreating) {
     return (
       <main className="grid min-h-screen place-items-center px-4">
-        <p className="rounded-full border border-foreground/20 bg-white/90 px-4 py-2 font-semibold text-foreground/70 text-sm">
+        <p className="rounded-full border border-foreground/20 bg-card/90 px-4 py-2 font-semibold text-foreground/70 text-sm">
           Creating your lobby...
         </p>
       </main>
@@ -168,7 +168,7 @@ export default function CreatePage() {
   if (!lobby) {
     return (
       <main className="grid min-h-screen place-items-center px-4">
-        <Card className="w-full max-w-md border-2 border-foreground/10 bg-white/90">
+        <Card className="w-full max-w-md border-2 border-foreground/10 bg-card/90">
           <CardHeader>
             <CardTitle>Lobby unavailable</CardTitle>
             <CardDescription>
@@ -192,14 +192,14 @@ export default function CreatePage() {
 
   return (
     <div className="container mx-auto space-y-4 px-4 py-6">
-      <Card className="sticky top-6 z-10 border-2 border-foreground/10 bg-white/85 backdrop-blur">
+      <Card className="sticky top-6 z-10 border-2 border-foreground/10 bg-card/85 backdrop-blur">
         <CardContent className="flex flex-col items-start justify-between gap-4 sm:flex-row">
           <div className="flex flex-wrap items-center gap-3">
             <CardTitle className="text-xl">Lobby code:</CardTitle>
-            <div className="rounded-2xl border-2 border-foreground/20 bg-white px-4 py-2 font-black font-mono text-3xl text-foreground tracking-[0.2em]">
+            <div className="rounded-2xl border-2 border-foreground/20 bg-background/80 px-4 py-2 font-black font-mono text-3xl text-foreground tracking-[0.2em]">
               {lobby.code}
             </div>
-            <Badge className="border border-foreground/20 bg-[#b7ffcf] text-foreground">
+            <Badge className="border border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-400/50 dark:bg-emerald-500/20 dark:text-emerald-100">
               Host view
             </Badge>
             <Badge
@@ -255,7 +255,7 @@ export default function CreatePage() {
           }}
         />
 
-        <Card className="border-2 border-foreground/10 bg-white/85">
+        <Card className="border-2 border-foreground/10 bg-card/85">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl">
               <Timer className="size-5" />
@@ -308,7 +308,7 @@ export default function CreatePage() {
       />
 
       {error ? (
-        <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm">
+        <p className="rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-destructive text-sm">
           {error}
         </p>
       ) : null}

@@ -47,17 +47,17 @@ const difficultyConfig: Record<
 > = {
   easy: {
     title: "Easy",
-    tint: "bg-[#b7ffcf]",
+    tint: "border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-400/50 dark:bg-emerald-500/20 dark:text-emerald-100",
     hint: "Warm-up level. Keep it quick and fun. For example: Where did you go to school?",
   },
   medium: {
     title: "Medium",
-    tint: "bg-[#ffe29b]",
+    tint: "border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-400/50 dark:bg-amber-500/20 dark:text-amber-100",
     hint: "Needs some thinking, but still fair. For example: What's your go-to karaoke song?",
   },
   hard: {
     title: "Hard",
-    tint: "bg-[#ffb8b8]",
+    tint: "border-rose-300 bg-rose-100 text-rose-900 dark:border-rose-400/50 dark:bg-rose-500/20 dark:text-rose-100",
     hint: "Brain-bender level. Make it spicy and niche!",
   },
 };
@@ -69,7 +69,7 @@ const defaultTopicChoice: Record<Difficulty, TopicChoice> = {
 };
 
 const selectClassName =
-  "flex h-11 w-full min-w-0 rounded-xl border border-input bg-white/90 px-3 py-2 text-base shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/60 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50";
+  "flex h-11 w-full min-w-0 rounded-xl border border-input bg-background/80 px-3 py-2 text-base shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/60 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50";
 
 export function QuestionBuilder({
   initialQuestions,
@@ -265,11 +265,14 @@ export function QuestionBuilder({
   };
 
   return (
-    <Card className="border-2 border-foreground/10 bg-white/85">
+    <Card className="border-2 border-foreground/10 bg-card/85">
       <CardHeader>
         <CardTitle className="text-xl">Your 3 questions</CardTitle>
         <CardDescription className="sm:max-w-1/2">
-          Fill in one easy, one medium and one hard question before game start. Questions can be about anything, but should be about you! Don't worry, you can always generate some generic questions using AI or edit them later on. Answers will be judged based on correctness and creativity.
+          Fill in one easy, one medium and one hard question before game start.
+          Questions can be about anything, but should be about you! Don't worry,
+          you can always generate some generic questions using AI or edit them
+          later on. Answers will be judged based on correctness and creativity.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -281,14 +284,10 @@ export function QuestionBuilder({
           return (
             <section
               key={difficulty}
-              className="rounded-2xl border border-foreground/15 bg-white/95 p-4"
+              className="rounded-2xl border border-foreground/15 bg-card/95 p-4"
             >
               <div className="mb-3 flex flex-wrap items-center gap-2">
-                <Badge
-                  className={`${config.tint} border border-foreground/20 text-foreground`}
-                >
-                  {config.title}
-                </Badge>
+                <Badge className={config.tint}>{config.title}</Badge>
                 <p className="text-foreground/70 text-sm">{config.hint}</p>
                 {isSaved ? (
                   <Badge
@@ -349,7 +348,7 @@ export function QuestionBuilder({
                   />
                 </div>
 
-                <div className="space-y-3 rounded-xl border border-foreground/10 bg-white/80 p-3">
+                <div className="space-y-3 rounded-xl border border-foreground/10 bg-card/80 p-3">
                   <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end">
                     <div className="space-y-1.5">
                       <Label htmlFor={`${difficulty}-topic`}>
@@ -450,7 +449,7 @@ export function QuestionBuilder({
         })}
 
         {error ? (
-          <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-red-700 text-sm">
+          <p className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-destructive text-sm">
             {error}
           </p>
         ) : null}
