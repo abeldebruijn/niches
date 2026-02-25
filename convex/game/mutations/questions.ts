@@ -1,7 +1,11 @@
 import { v } from "convex/values";
 import type { Doc, Id } from "../../_generated/dataModel";
 import { mutation } from "../../_generated/server";
-import { difficultyToField, difficultyValidator } from "../constants";
+import {
+  difficultyToField,
+  difficultyValidator,
+  minQuestionCount,
+} from "../constants";
 import { requireOrCreatePlayer } from "../helpers/authPlayer";
 import { shuffleInPlace } from "../helpers/collections";
 import { requireLobbyForPlayer } from "../helpers/lobby";
@@ -10,8 +14,65 @@ import {
   questionDurationSeconds,
   schedulePhaseAdvance,
 } from "../helpers/roundLifecycle";
-import { sanitizeQuestion } from "../helpers/validation";
+import {
+  computeEffectiveMaxQuestions,
+  sanitizeQuestion,
+} from "../helpers/validation";
 import type { QuestionDifficulty } from "../types";
+
+function buildBalancedQuestionOrder(
+  pools: Record<QuestionDifficulty, Id<"questions">[]>,
+  limit: number,
+) {
+  const selectedCountByDifficulty: Record<QuestionDifficulty, number> = {
+    EASY: 0,
+    MEDIUM: 0,
+    HARD: 0,
+  };
+  const order: Id<"questions">[] = [];
+
+  while (order.length < limit) {
+    const difficultiesWithRemaining = (
+      Object.entries(pools) as [QuestionDifficulty, Id<"questions">[]][]
+    ).filter(([, questionIds]) => questionIds.length > 0);
+
+    if (difficultiesWithRemaining.length < 1) {
+      break;
+    }
+
+    const minimumSelectedCount = Math.min(
+      ...difficultiesWithRemaining.map(
+        ([difficulty]) => selectedCountByDifficulty[difficulty],
+      ),
+    );
+    const balancedCandidates = difficultiesWithRemaining.filter(
+      ([difficulty]) =>
+        selectedCountByDifficulty[difficulty] === minimumSelectedCount,
+    );
+    const [pickedDifficulty] = balancedCandidates.sort(
+      ([leftDifficulty, leftPool], [rightDifficulty, rightPool]) => {
+        const remainingDifference = rightPool.length - leftPool.length;
+
+        if (remainingDifference !== 0) {
+          return remainingDifference;
+        }
+
+        return leftDifficulty.localeCompare(rightDifficulty);
+      },
+    )[0];
+
+    const nextQuestionId = pools[pickedDifficulty].shift();
+
+    if (!nextQuestionId) {
+      continue;
+    }
+
+    selectedCountByDifficulty[pickedDifficulty] += 1;
+    order.push(nextQuestionId);
+  }
+
+  return order;
+}
 
 export const saveQuestion = mutation({
   args: {
@@ -136,7 +197,26 @@ export const startGame = mutation({
         .map((question) => question._id),
     );
 
-    const orderedQuestions = [...easy, ...medium, ...hard];
+    const availableQuestionCount = unresolvedQuestions.length;
+    const effectiveMaxQuestions = computeEffectiveMaxQuestions(
+      server.maxQuestions,
+      availableQuestionCount,
+    );
+
+    if (effectiveMaxQuestions < minQuestionCount) {
+      throw new Error(
+        `At least ${minQuestionCount} questions are required to start the game.`,
+      );
+    }
+
+    const orderedQuestions = buildBalancedQuestionOrder(
+      {
+        EASY: easy,
+        MEDIUM: medium,
+        HARD: hard,
+      },
+      effectiveMaxQuestions,
+    );
 
     if (orderedQuestions.length < 1) {
       throw new Error("No valid questions were found for this game.");

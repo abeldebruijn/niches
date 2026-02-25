@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { Loader2, Rocket, Timer } from "lucide-react";
+import { Loader2, Rocket, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -25,6 +25,7 @@ export default function CreatePage() {
   const router = useRouter();
   const createLobby = useMutation(api.game.createLobby);
   const kickPlayer = useMutation(api.game.kickPlayer);
+  const updateMaxQuestions = useMutation(api.game.updateMaxQuestions);
   const updateTimePerQuestion = useMutation(api.game.updateTimePerQuestion);
   const startGame = useMutation(api.game.startGame);
   const lobby = useQuery(api.game.currentLobby);
@@ -32,11 +33,13 @@ export default function CreatePage() {
   const creationTriggered = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [isSavingMaxQuestions, setIsSavingMaxQuestions] = useState(false);
   const [isSavingTime, setIsSavingTime] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [kickingPlayerId, setKickingPlayerId] = useState<Id<"players"> | null>(
     null,
   );
+  const [maxQuestionsInput, setMaxQuestionsInput] = useState("10");
   const [timeInput, setTimeInput] = useState("60");
 
   const requestLobbyCreation = useCallback(() => {
@@ -71,6 +74,9 @@ export default function CreatePage() {
     }
 
     setTimeInput(String(lobby.timePerQuestion));
+    setMaxQuestionsInput(
+      String(lobby.maxQuestions ?? lobby.effectiveMaxQuestions),
+    );
 
     if (lobby.gameState === "PLAY") {
       router.replace(`/${lobby.code}/play`);
@@ -108,6 +114,35 @@ export default function CreatePage() {
       setError(message);
     } finally {
       setIsSavingTime(false);
+    }
+  };
+
+  const handleSaveMaxQuestions = async () => {
+    if (!lobby) {
+      return;
+    }
+
+    const parsed = Number(maxQuestionsInput);
+
+    if (!Number.isFinite(parsed)) {
+      setError("Maximum questions must be a number.");
+      return;
+    }
+
+    setIsSavingMaxQuestions(true);
+    setError(null);
+
+    try {
+      const result = await updateMaxQuestions({ count: parsed });
+      setMaxQuestionsInput(String(result.count));
+    } catch (maxQuestionsError) {
+      const message =
+        maxQuestionsError instanceof Error
+          ? maxQuestionsError.message
+          : "Could not update maximum questions.";
+      setError(message);
+    } finally {
+      setIsSavingMaxQuestions(false);
     }
   };
 
@@ -258,16 +293,16 @@ export default function CreatePage() {
         <Card className="border-2 border-foreground/10 bg-card/85">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl">
-              <Timer className="size-5" />
-              Time per question
+              <Settings className="size-5" />
+              Settings
             </CardTitle>
-            <CardDescription>
-              Default is 60 seconds. Allowed range: 15-300 seconds.
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="timer">Seconds</Label>
+              <p className="text-foreground text-xs">
+                Default is 60 seconds. Allowed range: 15-300 seconds.
+              </p>
               <Input
                 id="timer"
                 type="number"
@@ -298,6 +333,55 @@ export default function CreatePage() {
                 "Save timer"
               )}
             </Button>
+
+            <hr className="my-4 border-foreground/20" />
+
+            <div className="space-y-1.5 pt-1">
+              <Label htmlFor="max-questions">Maximum questions</Label>
+              <Input
+                id="max-questions"
+                type="number"
+                min={3}
+                max={Math.max(3, lobby.availableQuestionCount)}
+                value={maxQuestionsInput}
+                onChange={(event) => {
+                  setMaxQuestionsInput(event.target.value);
+                }}
+              />
+              <p className="text-foreground/70 text-sm">
+                {lobby.maxQuestions
+                  ? `Current maximum is set to ${lobby.maxQuestions}.`
+                  : `Default maximum is ${lobby.effectiveMaxQuestions} based on ${lobby.availableQuestionCount} available questions.`}
+              </p>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full rounded-full border-2"
+              disabled={
+                isSavingMaxQuestions || lobby.availableQuestionCount < 3
+              }
+              onClick={() => {
+                void handleSaveMaxQuestions();
+              }}
+            >
+              {isSavingMaxQuestions ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Saving maximum
+                </>
+              ) : (
+                "Save maximum"
+              )}
+            </Button>
+
+            {lobby.availableQuestionCount < 3 ? (
+              <p className="text-foreground/70 text-sm">
+                Save at least 3 questions in this lobby before setting a
+                maximum.
+              </p>
+            ) : null}
           </CardContent>
         </Card>
       </section>

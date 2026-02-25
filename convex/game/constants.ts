@@ -16,6 +16,8 @@ export const difficultyToField: Record<Difficulty, keyof Doc<"players">> = {
 
 export const minTimerSeconds = 15;
 export const maxTimerSeconds = 300;
+export const defaultMaxQuestions = 10;
+export const minQuestionCount = 3;
 export const minStars = 0;
 export const maxStars = 5;
 export const acceleratedAnswerWindowSeconds = 10;

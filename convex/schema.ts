@@ -22,6 +22,7 @@ export default defineSchema({
     gameState: gameStateValidator,
     currentQuestion: v.optional(v.id("questions")),
     timePerQuestion: v.number(),
+    maxQuestions: v.optional(v.number()),
     questionOrder: v.optional(v.array(v.id("questions"))),
     questionCursor: v.optional(v.number()),
     phase: v.optional(roundPhaseValidator),
