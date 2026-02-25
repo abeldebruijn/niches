@@ -1,5 +1,6 @@
 import { query } from "../../_generated/server";
 import { requirePlayerForQuery } from "../helpers/authPlayer";
+import { computeEffectiveMaxQuestions } from "../helpers/validation";
 
 export const currentLobby = query({
   args: {},
@@ -20,6 +21,16 @@ export const currentLobby = query({
       .query("players")
       .withIndex("by_in_server", (q) => q.eq("inServer", server._id))
       .collect();
+    const availableQuestionCount = (
+      await ctx.db
+        .query("questions")
+        .withIndex("by_server", (q) => q.eq("server", server._id))
+        .collect()
+    ).filter((question) => !question.isAnswered).length;
+    const effectiveMaxQuestions = computeEffectiveMaxQuestions(
+      server.maxQuestions,
+      availableQuestionCount,
+    );
 
     const easy = player.easyQuestion
       ? await ctx.db.get(player.easyQuestion)
@@ -42,6 +53,9 @@ export const currentLobby = query({
       code: server.code,
       gameState: server.gameState,
       timePerQuestion: server.timePerQuestion,
+      maxQuestions: server.maxQuestions,
+      effectiveMaxQuestions,
+      availableQuestionCount,
       isHost: server.hostPlayer === player._id,
       canStart:
         server.hostPlayer === player._id &&

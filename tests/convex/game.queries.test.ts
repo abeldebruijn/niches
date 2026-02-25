@@ -105,12 +105,18 @@ describe("game queries", () => {
       "HostUser",
     ]);
     expect(beforeReady?.canStart).toBe(false);
+    expect(beforeReady?.availableQuestionCount).toBe(0);
+    expect(beforeReady?.effectiveMaxQuestions).toBe(0);
+    expect(beforeReady?.maxQuestions).toBeUndefined();
 
     await fillAllQuestions(host.client, "host");
     await fillAllQuestions(guest.client, "guest");
     const ready = await host.client.query(api.game.currentLobby, {});
 
     expect(ready?.canStart).toBe(true);
+    expect(ready?.availableQuestionCount).toBe(6);
+    expect(ready?.effectiveMaxQuestions).toBe(6);
+    expect(ready?.maxQuestions).toBeUndefined();
     expect(ready?.viewerQuestions.easy?.query).toContain("host-easy-question");
     expect(ready?.viewerQuestions.medium?.query).toContain(
       "host-medium-question",
@@ -119,6 +125,13 @@ describe("game queries", () => {
 
     const guestLobby = await guest.client.query(api.game.currentLobby, {});
     expect(guestLobby?.code).toBe(code);
+
+    await host.client.mutation(api.game.updateMaxQuestions, {
+      count: 4,
+    });
+    const configured = await host.client.query(api.game.currentLobby, {});
+    expect(configured?.maxQuestions).toBe(4);
+    expect(configured?.effectiveMaxQuestions).toBe(4);
   });
 
   test("playScreen auth and membership behavior", async () => {

@@ -222,7 +222,7 @@ describe("game question mutations", () => {
     );
   });
 
-  test("startGame sets play phase fields and ordered difficulty groups", async () => {
+  test("startGame sets play phase fields with balanced difficulties", async () => {
     const { t, host, server } = await setupReadyLobby();
 
     await host.client.mutation(api.game.startGame, {});
@@ -254,25 +254,33 @@ describe("game question mutations", () => {
       return docs;
     });
 
-    const difficulties = orderedQuestions.map((q) => q.difficulty);
-    const firstMedium = difficulties.indexOf("MEDIUM");
-    const firstHard = difficulties.indexOf("HARD");
+    const difficultyCounts = orderedQuestions.reduce(
+      (acc, question) => {
+        acc[question.difficulty] += 1;
+        return acc;
+      },
+      {
+        EASY: 0,
+        MEDIUM: 0,
+        HARD: 0,
+      },
+    );
+    const counts = Object.values(difficultyCounts);
 
-    if (firstMedium !== -1) {
-      expect(
-        difficulties.slice(0, firstMedium).every((d) => d === "EASY"),
-      ).toBe(true);
-    }
-    if (firstHard !== -1 && firstMedium !== -1) {
-      expect(
-        difficulties.slice(firstMedium, firstHard).every((d) => d === "MEDIUM"),
-      ).toBe(true);
-    }
-    if (firstHard !== -1) {
-      expect(difficulties.slice(firstHard).every((d) => d === "HARD")).toBe(
-        true,
-      );
-    }
+    expect(updated?.questionOrder).toHaveLength(6);
+    expect(Math.max(...counts) - Math.min(...counts)).toBeLessThanOrEqual(1);
+  });
+
+  test("startGame applies configured max question count", async () => {
+    const { t, host, server } = await setupReadyLobby();
+
+    await host.client.mutation(api.game.updateMaxQuestions, {
+      count: 4,
+    });
+    await host.client.mutation(api.game.startGame, {});
+
+    const updated = await getServer(t, server._id);
+    expect(updated?.questionOrder).toHaveLength(4);
   });
 
   test("startGame schedules phase advance to RATING", async () => {

@@ -4,6 +4,7 @@ export {
   joinLobby,
   kickPlayer,
   leaveServer,
+  updateMaxQuestions,
   updateTimePerQuestion,
 } from "./mutations/lobby";
 export {

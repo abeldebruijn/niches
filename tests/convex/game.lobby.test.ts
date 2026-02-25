@@ -4,6 +4,7 @@ import {
   createAuthedUser,
   createConvexTest,
   ensureAuthedPlayer,
+  fillAllQuestions,
   getServerByCode,
   patchServer,
 } from "./_testUtils";
@@ -34,6 +35,7 @@ describe("game lobby mutations", () => {
     expect(server).not.toBeNull();
     expect(server?.gameState).toBe("CREATE_QUESTIONS");
     expect(server?.timePerQuestion).toBe(60);
+    expect(server?.maxQuestions).toBeUndefined();
     expect(server?.hostPlayer).toBe(host.playerId);
   });
 
@@ -202,6 +204,55 @@ describe("game lobby mutations", () => {
 
     expect(minResult.seconds).toBe(15);
     expect(maxResult.seconds).toBe(300);
+  });
+
+  test("updateMaxQuestions only allows host and CREATE_QUESTIONS state", async () => {
+    const { t, host, guest, server } = await setupLobby();
+
+    await expect(
+      guest.client.mutation(api.game.updateMaxQuestions, {
+        count: 5,
+      }),
+    ).rejects.toThrow("Only the host can update the maximum questions.");
+
+    await patchServer(t, server._id, {
+      gameState: "PLAY",
+    });
+    await expect(
+      host.client.mutation(api.game.updateMaxQuestions, {
+        count: 5,
+      }),
+    ).rejects.toThrow(
+      "Maximum questions can only be edited before the game starts.",
+    );
+  });
+
+  test("updateMaxQuestions enforces minimum availability and clamps to lobby range", async () => {
+    const { host, guest, t, code } = await setupLobby();
+
+    await expect(
+      host.client.mutation(api.game.updateMaxQuestions, {
+        count: 5,
+      }),
+    ).rejects.toThrow(
+      "At least 3 questions must be saved before setting a maximum.",
+    );
+
+    await fillAllQuestions(host.client, "host");
+    await fillAllQuestions(guest.client, "guest");
+
+    const minResult = await host.client.mutation(api.game.updateMaxQuestions, {
+      count: 1,
+    });
+    const maxResult = await host.client.mutation(api.game.updateMaxQuestions, {
+      count: 999,
+    });
+
+    const server = await getServerByCode(t, code);
+
+    expect(minResult.count).toBe(3);
+    expect(maxResult.count).toBe(6);
+    expect(server?.maxQuestions).toBe(6);
   });
 
   test("kickPlayer only allows host and CREATE_QUESTIONS state", async () => {

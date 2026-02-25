@@ -7,6 +7,7 @@ import {
   generateUniqueLobbyCode,
   requireLobbyForPlayer,
 } from "../helpers/lobby";
+import { clampMaxQuestionsForLobby } from "../helpers/validation";
 
 /**
  * Creates a new lobby and returns the lobby code.
@@ -37,6 +38,7 @@ export const createLobby = mutation({
       gameState: "CREATE_QUESTIONS",
       maxQuestions: 6,
       timePerQuestion: 60,
+      maxQuestions: undefined,
     });
 
     await ctx.db.patch(player._id, {
@@ -117,6 +119,44 @@ export const updateTimePerQuestion = mutation({
     });
 
     return { seconds: clampedSeconds };
+  },
+});
+
+export const updateMaxQuestions = mutation({
+  args: {
+    count: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const player = await requireOrCreatePlayer(ctx);
+    const server = await requireLobbyForPlayer(ctx, player);
+
+    if (server.hostPlayer !== player._id) {
+      throw new Error("Only the host can update the maximum questions.");
+    }
+
+    if (server.gameState !== "CREATE_QUESTIONS") {
+      throw new Error(
+        "Maximum questions can only be edited before the game starts.",
+      );
+    }
+
+    const availableQuestionCount = (
+      await ctx.db
+        .query("questions")
+        .withIndex("by_server", (q) => q.eq("server", server._id))
+        .collect()
+    ).filter((question) => !question.isAnswered).length;
+
+    const clampedCount = clampMaxQuestionsForLobby(
+      args.count,
+      availableQuestionCount,
+    );
+
+    await ctx.db.patch(server._id, {
+      maxQuestions: clampedCount,
+    });
+
+    return { count: clampedCount };
   },
 });
 

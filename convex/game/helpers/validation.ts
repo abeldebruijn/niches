@@ -1,5 +1,10 @@
 import type { Doc } from "../../_generated/dataModel";
-import { maxStars, minStars } from "../constants";
+import {
+  defaultMaxQuestions,
+  maxStars,
+  minQuestionCount,
+  minStars,
+} from "../constants";
 
 export function sanitizeQuestion(value: string, label: string) {
   const trimmed = value.trim();
@@ -38,4 +43,41 @@ export function responseIsFullyRated(response: Doc<"responses">) {
     typeof response.correctnessStars === "number" &&
     typeof response.creativityStars === "number"
   );
+}
+
+export function computeEffectiveMaxQuestions(
+  configuredMaxQuestions: number | undefined,
+  availableQuestionCount: number,
+) {
+  const normalizedAvailable = Math.max(0, Math.floor(availableQuestionCount));
+
+  if (typeof configuredMaxQuestions !== "number") {
+    return Math.min(defaultMaxQuestions, normalizedAvailable);
+  }
+
+  return Math.max(
+    minQuestionCount,
+    Math.min(normalizedAvailable, Math.floor(configuredMaxQuestions)),
+  );
+}
+
+export function clampMaxQuestionsForLobby(
+  raw: number,
+  availableQuestionCount: number,
+) {
+  if (!Number.isFinite(raw)) {
+    throw new Error("Maximum questions must be a number.");
+  }
+
+  const normalizedAvailable = Math.max(0, Math.floor(availableQuestionCount));
+
+  if (normalizedAvailable < minQuestionCount) {
+    throw new Error(
+      `At least ${minQuestionCount} questions must be saved before setting a maximum.`,
+    );
+  }
+
+  const rounded = Math.round(raw);
+
+  return Math.max(minQuestionCount, Math.min(normalizedAvailable, rounded));
 }
