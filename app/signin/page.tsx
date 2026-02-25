@@ -2,7 +2,7 @@
 
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth } from "convex/react";
-import { Dice6, Sparkles } from "lucide-react";
+import { Dice6 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 
@@ -113,13 +113,14 @@ export default function SignInPage() {
         <div className="absolute -bottom-32 left-1/3 h-96 w-96 rounded-full bg-[#ffe16b]/30 blur-3xl" />
       </div>
 
-      <Card className="w-full max-w-md border-2 border-foreground/10 bg-white/85 shadow-[0_18px_50px_rgba(0,0,0,0.12)]">
+      <Card className="w-full max-w-md border-2 border-foreground/10 bg-card/85 shadow-[0_18px_50px_rgba(0,0,0,0.12)]">
         <CardHeader className="space-y-3 text-center">
           <CardTitle className="font-(--font-display) text-4xl leading-none">
             Niches trivia game
           </CardTitle>
           <CardDescription>
-            The game where you create questions and challenge your friends how well they know you.
+            The game where you create questions and challenge your friends how
+            well they know you.
           </CardDescription>
         </CardHeader>
 
@@ -130,7 +131,7 @@ export default function SignInPage() {
           >
             <div className="space-y-2">
               <Label htmlFor="username">Choose a creative username</Label>
-                <Input
+              <Input
                 id="username"
                 value={username}
                 onChange={(event) => {
@@ -139,15 +140,15 @@ export default function SignInPage() {
                 autoComplete="off"
                 placeholder="CosmicOtter42"
                 maxLength={20}
-                className="placeholder:text-foreground/40"
-                />
+                className="placeholder:text-muted-foreground/80"
+              />
               <p className="text-foreground/70 text-xs">{usernameHint}</p>
             </div>
 
             <div className="flex flex-wrap gap-2">
               <Badge
                 variant="outline"
-                className="border-foreground/20 bg-white text-foreground"
+                className="border-foreground/20 bg-background/75 text-foreground"
               >
                 Ideas:
               </Badge>
@@ -155,7 +156,7 @@ export default function SignInPage() {
                 <button
                   key={suggestion}
                   type="button"
-                  className="inline-flex items-center rounded-full border border-foreground/20 bg-white px-3 py-1 font-semibold text-foreground/75 text-xs transition-colors hover:bg-foreground/5"
+                  className="inline-flex items-center rounded-full border border-foreground/20 bg-background/75 px-3 py-1 font-semibold text-foreground/75 text-xs transition-colors hover:bg-foreground/5"
                   onClick={() => {
                     setUsername(suggestion);
                   }}
@@ -168,7 +169,7 @@ export default function SignInPage() {
             <Button
               type="button"
               variant="outline"
-              className="w-full rounded-full border-2 border-foreground/20 bg-white"
+              className="w-full rounded-full border-2 border-foreground/20 bg-background/75"
               onClick={() => {
                 setUsername(createUsernameSuggestion());
               }}
@@ -186,7 +187,7 @@ export default function SignInPage() {
             </Button>
 
             {error ? (
-              <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-red-700 text-sm">
+              <p className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-destructive text-sm">
                 {error}
               </p>
             ) : null}

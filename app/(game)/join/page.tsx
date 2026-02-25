@@ -79,7 +79,7 @@ export default function JoinPage() {
   if (lobby === undefined) {
     return (
       <main className="grid min-h-screen place-items-center px-4">
-        <p className="rounded-full border border-foreground/20 bg-white/90 px-4 py-2 font-semibold text-foreground/70 text-sm">
+        <p className="rounded-full border border-foreground/20 bg-card/90 px-4 py-2 font-semibold text-foreground/70 text-sm">
           Loading lobby data...
         </p>
       </main>
@@ -89,7 +89,7 @@ export default function JoinPage() {
   if (!lobby) {
     return (
       <AppShell>
-        <Card className="border-2 border-foreground/10 bg-white/85">
+        <Card className="border-2 border-foreground/10 bg-card/85">
           <CardHeader>
             <CardTitle className="text-xl">Lobby code</CardTitle>
             <CardDescription>
@@ -137,7 +137,7 @@ export default function JoinPage() {
               </Button>
 
               {error ? (
-                <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-red-700 text-sm">
+                <p className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-destructive text-sm">
                   {error}
                 </p>
               ) : null}
@@ -152,7 +152,7 @@ export default function JoinPage() {
 
   return (
     <AppShell>
-      <Card className="border-2 border-foreground/10 bg-white/85">
+      <Card className="border-2 border-foreground/10 bg-card/85">
         <CardHeader>
           <CardTitle className="text-xl">Connected lobby</CardTitle>
           <CardDescription>
@@ -161,7 +161,7 @@ export default function JoinPage() {
         </CardHeader>
         <CardContent className="flex flex-wrap items-center gap-3">
           {host ? (
-            <Badge className="border border-foreground/20 bg-[#ffd18a] text-foreground">
+            <Badge className="border border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-400/50 dark:bg-amber-500/20 dark:text-amber-100">
               <Crown className="size-3.5" />
               Host: {host.username}
             </Badge>
@@ -198,7 +198,7 @@ export default function JoinPage() {
       />
 
       {error ? (
-        <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm">
+        <p className="rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-destructive text-sm">
           {error}
         </p>
       ) : null}

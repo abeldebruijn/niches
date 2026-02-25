@@ -41,7 +41,7 @@ export function LobbyRoster({
   onKickPlayer,
 }: LobbyRosterProps) {
   return (
-    <Card className="border-2 border-foreground/10 bg-white/85">
+    <Card className="border-2 border-foreground/10 bg-card/85">
       <CardHeader>
         <CardTitle className="text-xl">Lobby players</CardTitle>
         <CardDescription>
@@ -53,18 +53,18 @@ export function LobbyRoster({
         {players.map((player) => (
           <div
             key={player.id}
-            className="rounded-2xl border border-foreground/15 bg-white/90 p-3"
+            className="rounded-2xl border border-foreground/15 bg-card/90 p-3"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="font-semibold">{player.username}</p>
                 {player.isYou ? (
-                  <Badge className="border border-foreground/20 bg-[#b7ffcf] text-foreground">
+                  <Badge className="border border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-400/50 dark:bg-emerald-500/20 dark:text-emerald-100">
                     You
                   </Badge>
                 ) : null}
                 {player.isHost ? (
-                  <Badge className="border border-foreground/20 bg-[#ffd18a] text-foreground">
+                  <Badge className="border border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-400/50 dark:bg-amber-500/20 dark:text-amber-100">
                     Host
                   </Badge>
                 ) : null}
@@ -98,10 +98,10 @@ export function LobbyRoster({
               <Badge
                 variant="outline"
                 className={cn(
-                  "justify-center rounded-xl border-foreground/20",
+                  "justify-center rounded-xl",
                   player.hasEasy
-                    ? "border-green-500 bg-green-50"
-                    : "border-red-500 bg-red-50",
+                    ? "border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-400/50 dark:bg-emerald-500/20 dark:text-emerald-100"
+                    : "border-destructive/60 bg-destructive/10 text-destructive",
                 )}
               >
                 Easy: {readinessLabel(player.hasEasy)}
@@ -109,10 +109,10 @@ export function LobbyRoster({
               <Badge
                 variant="outline"
                 className={cn(
-                  "justify-center rounded-xl border-foreground/20",
+                  "justify-center rounded-xl",
                   player.hasMedium
-                    ? "border-green-500 bg-green-50"
-                    : "border-red-500 bg-red-50",
+                    ? "border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-400/50 dark:bg-emerald-500/20 dark:text-emerald-100"
+                    : "border-destructive/60 bg-destructive/10 text-destructive",
                 )}
               >
                 Medium: {readinessLabel(player.hasMedium)}
@@ -120,10 +120,10 @@ export function LobbyRoster({
               <Badge
                 variant="outline"
                 className={cn(
-                  "justify-center rounded-xl border-foreground/20",
+                  "justify-center rounded-xl",
                   player.hasHard
-                    ? "border-green-500 bg-green-50"
-                    : "border-red-500 bg-red-50",
+                    ? "border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-400/50 dark:bg-emerald-500/20 dark:text-emerald-100"
+                    : "border-destructive/60 bg-destructive/10 text-destructive",
                 )}
               >
                 Hard: {readinessLabel(player.hasHard)}
