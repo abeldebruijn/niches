@@ -56,6 +56,7 @@ describe("game lobby mutations", () => {
         code: 123456,
         hostPlayer: host.playerId,
         gameState: "CREATE_QUESTIONS",
+        maxQuestions: 6,
         timePerQuestion: 60,
       });
       const easyQuestion = await ctx.db.insert("questions", {

@@ -6,7 +6,10 @@ import {
   nowInSeconds,
   questionDurationSeconds,
 } from "../helpers/roundLifecycle";
-import { normalizeStoredStars, responseIsFullyRated } from "../helpers/validation";
+import {
+  normalizeStoredStars,
+  responseIsFullyRated,
+} from "../helpers/validation";
 
 export const playScreen = query({
   args: {
@@ -220,7 +223,7 @@ export const playScreen = query({
                   : null,
               creativityStars:
                 typeof response.creativityStars === "number"
-                  ? response.creativityStars
+                  ? normalizeStoredStars(response.creativityStars)
                   : null,
             })),
           }

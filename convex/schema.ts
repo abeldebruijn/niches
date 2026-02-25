@@ -21,6 +21,7 @@ export default defineSchema({
     hostPlayer: v.id("players"),
     gameState: gameStateValidator,
     currentQuestion: v.optional(v.id("questions")),
+    maxQuestions: v.number(),
     timePerQuestion: v.number(),
     questionOrder: v.optional(v.array(v.id("questions"))),
     questionCursor: v.optional(v.number()),

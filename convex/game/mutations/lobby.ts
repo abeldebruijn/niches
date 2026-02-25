@@ -35,6 +35,7 @@ export const createLobby = mutation({
       code,
       hostPlayer: player._id,
       gameState: "CREATE_QUESTIONS",
+      maxQuestions: 6,
       timePerQuestion: 60,
     });
 
