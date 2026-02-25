@@ -1,11 +1,15 @@
 import { v } from "convex/values";
+import type { Id } from "../../_generated/dataModel";
 import { query } from "../../_generated/server";
 import { requirePlayerForQuery } from "../helpers/authPlayer";
 import {
   nowInSeconds,
   questionDurationSeconds,
 } from "../helpers/roundLifecycle";
-import { responseIsFullyRated } from "../helpers/validation";
+import {
+  normalizeStoredStars,
+  responseIsFullyRated,
+} from "../helpers/validation";
 
 export const playScreen = query({
   args: {
@@ -50,6 +54,13 @@ export const playScreen = query({
       isHost: server.hostPlayer === player._id,
       players: sortedPlayers,
       serverNowSec: nowInSeconds(),
+      latestAnswerFeedback: null as {
+        questionId: Id<"questions">;
+        correctnessStars: number;
+        creativityStars: number;
+        correctAnswer: string;
+        yourAnswer: string;
+      } | null,
     };
 
     if (
@@ -128,6 +139,45 @@ export const playScreen = query({
     const canGoNextEarly =
       server.hostPlayer === player._id ||
       (isRatingPlayer && server.phase === "RATING" && allResponsesRated);
+    let latestAnswerFeedback = base.latestAnswerFeedback;
+
+    if (
+      typeof server.questionCursor === "number" &&
+      server.questionCursor > 0 &&
+      Array.isArray(server.questionOrder)
+    ) {
+      const previousQuestionId =
+        server.questionOrder[server.questionCursor - 1];
+
+      if (previousQuestionId) {
+        const previousQuestion = await ctx.db.get(previousQuestionId);
+
+        if (previousQuestion) {
+          const previousResponse = await ctx.db
+            .query("responses")
+            .withIndex("by_question_responder", (q) =>
+              q
+                .eq("question", previousQuestion._id)
+                .eq("responder", player._id),
+            )
+            .unique();
+
+          if (previousResponse && responseIsFullyRated(previousResponse)) {
+            latestAnswerFeedback = {
+              questionId: previousQuestion._id,
+              correctnessStars: normalizeStoredStars(
+                previousResponse.correctnessStars,
+              ),
+              creativityStars: normalizeStoredStars(
+                previousResponse.creativityStars,
+              ),
+              correctAnswer: previousQuestion.answer,
+              yourAnswer: previousResponse.answer,
+            };
+          }
+        }
+      }
+    }
 
     const yourResponse = !isRatingPlayer
       ? await ctx.db
@@ -158,6 +208,7 @@ export const playScreen = query({
       canGoNextEarly,
       canSubmitAnswer,
       canRateResponses,
+      latestAnswerFeedback,
       rating: isRatingPlayer
         ? {
             totalSubmittedResponses: responses.length,
@@ -168,11 +219,11 @@ export const playScreen = query({
               answer: response.answer,
               correctnessStars:
                 typeof response.correctnessStars === "number"
-                  ? response.correctnessStars
+                  ? normalizeStoredStars(response.correctnessStars)
                   : null,
               creativityStars:
                 typeof response.creativityStars === "number"
-                  ? response.creativityStars
+                  ? normalizeStoredStars(response.creativityStars)
                   : null,
             })),
           }

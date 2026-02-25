@@ -137,6 +137,7 @@ export default function PlayScreenPage() {
   const answerDraftQuestionId = useRef<Id<"questions"> | null>(null);
   const previousCountdownKeyRef = useRef<string | null>(null);
   const previousRemainingSecRef = useRef<number | null>(null);
+  const previousFeedbackToastKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -274,6 +275,35 @@ export default function PlayScreenPage() {
       id: `countdown-${countdownKey}-${crossedMilestone}`,
     });
   }, [playData?.phase, playData?.question, remainingSec]);
+
+  useEffect(() => {
+    const feedback = playData?.latestAnswerFeedback;
+
+    if (!feedback) {
+      return;
+    }
+
+    const toastKey = `${feedback.questionId}:${feedback.correctnessStars}:${feedback.creativityStars}:${feedback.yourAnswer}:${feedback.correctAnswer}`;
+
+    if (previousFeedbackToastKeyRef.current === toastKey) {
+      return;
+    }
+
+    previousFeedbackToastKeyRef.current = toastKey;
+
+    toast.message("Last round scored", {
+      id: `answer-feedback-${feedback.questionId}`,
+      duration: 10000,
+      description: (
+        <div className="space-y-1">
+          <p>Correctness: {feedback.correctnessStars}/5 stars</p>
+          <p>Creativity: {feedback.creativityStars}/5 stars</p>
+          <p>Correct answer: {feedback.correctAnswer}</p>
+          <p>Your answer: {feedback.yourAnswer}</p>
+        </div>
+      ),
+    });
+  }, [playData?.latestAnswerFeedback]);
 
   const handleSubmitAnswer = async () => {
     if (!playData) {
