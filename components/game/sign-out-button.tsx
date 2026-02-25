@@ -13,7 +13,7 @@ export function SignOutButton() {
     <Button
       variant="outline"
       size="sm"
-      className="rounded-full border-2 border-foreground/20 bg-white/80 px-4"
+      className="rounded-full border-2 border-foreground/20 bg-card/80 px-4"
       onClick={() => {
         void signOut().then(() => {
           router.push("/signin");

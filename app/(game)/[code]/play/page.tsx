@@ -86,8 +86,8 @@ function StarScale({
           className={cn(
             "grid size-8 place-items-center rounded-lg border transition",
             value >= star
-              ? "border-amber-400 bg-amber-100 text-amber-600"
-              : "border-foreground/20 bg-white text-foreground/45",
+              ? "border-amber-400 bg-amber-100 text-amber-800 dark:border-amber-400/50 dark:bg-amber-500/20 dark:text-amber-100"
+              : "border-border bg-background/75 text-muted-foreground",
             disabled && "cursor-not-allowed opacity-70",
           )}
           disabled={disabled}
@@ -383,7 +383,7 @@ export default function PlayScreenPage() {
   if (!isCodeValid) {
     return (
       <main className="grid min-h-screen place-items-center px-4">
-        <Card className="w-full max-w-md border-2 border-foreground/10 bg-white/90">
+        <Card className="w-full max-w-md border-2 border-foreground/10 bg-card/90">
           <CardHeader>
             <CardTitle>Invalid game URL</CardTitle>
             <CardDescription>
@@ -403,7 +403,7 @@ export default function PlayScreenPage() {
   if (playData === undefined) {
     return (
       <main className="grid min-h-screen place-items-center px-4">
-        <p className="rounded-full border border-foreground/20 bg-white/90 px-4 py-2 font-semibold text-foreground/70 text-sm">
+        <p className="rounded-full border border-foreground/20 bg-card/90 px-4 py-2 font-semibold text-foreground/70 text-sm">
           Opening play screen...
         </p>
       </main>
@@ -413,7 +413,7 @@ export default function PlayScreenPage() {
   if (!playData) {
     return (
       <main className="grid min-h-screen place-items-center px-4">
-        <Card className="w-full max-w-md border-2 border-foreground/10 bg-white/90">
+        <Card className="w-full max-w-md border-2 border-foreground/10 bg-card/90">
           <CardHeader>
             <CardTitle>Game not found</CardTitle>
             <CardDescription>
@@ -433,7 +433,7 @@ export default function PlayScreenPage() {
   if (playData.gameState !== "PLAY" || !playData.question || !playData.role) {
     return (
       <main className="grid min-h-screen place-items-center px-4">
-        <Card className="w-full max-w-md border-2 border-foreground/10 bg-white/90">
+        <Card className="w-full max-w-md border-2 border-foreground/10 bg-card/90">
           <CardHeader>
             <CardTitle>Waiting for game state</CardTitle>
             <CardDescription>
@@ -453,11 +453,11 @@ export default function PlayScreenPage() {
   return (
     <main className="min-h-screen px-4 py-5 sm:px-6">
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-4">
-        <Card className="border-2 border-foreground/10 bg-white/85 backdrop-blur">
+        <Card className="border-2 border-foreground/10 bg-card/85 backdrop-blur">
           <CardContent className="flex flex-col gap-4 p-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="space-y-1">
-                <p className="font-semibold text-foreground/60 text-xs uppercase tracking-[0.12em]">
+                <p className="font-semibold text-muted-foreground text-xs uppercase tracking-[0.12em]">
                   Lobby {playData.code}
                 </p>
                 <h1 className="font-(--font-display) text-3xl leading-none">
@@ -466,7 +466,7 @@ export default function PlayScreenPage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <Badge className="border border-foreground/20 bg-[#b7ffcf] text-foreground">
+                <Badge className="border border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-400/50 dark:bg-emerald-500/20 dark:text-emerald-100">
                   <Star className="size-3.5" />
                   Your score: {playData.yourScore}
                 </Badge>
@@ -490,14 +490,14 @@ export default function PlayScreenPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge
                     variant="outline"
-                    className="rounded-full border-foreground/20 bg-white px-3 py-1 text-foreground"
+                    className="rounded-full border-foreground/20 bg-background/75 px-3 py-1 text-foreground"
                   >
                     Question {playData.questionProgress?.current ?? "-"} of{" "}
                     {playData.questionProgress?.total ?? "-"}
                   </Badge>
                   <Badge
                     variant="outline"
-                    className="rounded-full border-foreground/20 bg-white px-3 py-1 text-foreground"
+                    className="rounded-full border-foreground/20 bg-background/75 px-3 py-1 text-foreground"
                   >
                     <Timer className="size-3.5" />
                     {formatSeconds(remainingSec)} remaining
@@ -536,7 +536,7 @@ export default function PlayScreenPage() {
             </div>
 
             {advanceError ? (
-              <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-red-700 text-sm">
+              <p className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-destructive text-sm">
                 {advanceError}
               </p>
             ) : null}
@@ -544,7 +544,7 @@ export default function PlayScreenPage() {
         </Card>
 
         <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <Card className="border-2 border-foreground/10 bg-white/85">
+          <Card className="border-2 border-foreground/10 bg-card/85">
             <CardHeader>
               <CardTitle className="text-xl">
                 {playData.question.query}
@@ -558,7 +558,7 @@ export default function PlayScreenPage() {
             <CardContent className="space-y-4">
               {playData.role === "RATING_PLAYER" ? (
                 <div className="space-y-4">
-                  <div className="rounded-2xl border border-foreground/15 bg-white/90 p-3">
+                  <div className="rounded-2xl border border-foreground/15 bg-card/90 p-3">
                     <p className="font-semibold text-foreground/70 text-sm uppercase tracking-[0.08em]">
                       Original answer
                     </p>
@@ -582,7 +582,7 @@ export default function PlayScreenPage() {
                         return (
                           <article
                             key={response.id}
-                            className="space-y-3 rounded-2xl border border-foreground/15 bg-white/95 p-4"
+                            className="space-y-3 rounded-2xl border border-foreground/15 bg-card/95 p-4"
                           >
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <p className="font-semibold">{response.label}</p>
@@ -666,7 +666,7 @@ export default function PlayScreenPage() {
                       })}
                     </div>
                   ) : (
-                    <p className="rounded-xl border border-foreground/15 bg-white/90 px-3 py-2 text-foreground/70 text-sm">
+                    <p className="rounded-xl border border-foreground/15 bg-card/90 px-3 py-2 text-foreground/70 text-sm">
                       No responses were submitted for this question.
                     </p>
                   )}
@@ -677,7 +677,7 @@ export default function PlayScreenPage() {
                   </p>
 
                   {ratingError ? (
-                    <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-red-700 text-sm">
+                    <p className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-destructive text-sm">
                       {ratingError}
                     </p>
                   ) : null}
@@ -727,7 +727,7 @@ export default function PlayScreenPage() {
                   ) : null}
 
                   {answerError ? (
-                    <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-red-700 text-sm">
+                    <p className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-destructive text-sm">
                       {answerError}
                     </p>
                   ) : null}
@@ -736,7 +736,7 @@ export default function PlayScreenPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-2 border-foreground/10 bg-white/85">
+          <Card className="border-2 border-foreground/10 bg-card/85">
             <CardHeader>
               <CardTitle className="text-xl">Scoreboard</CardTitle>
               <CardDescription>
@@ -747,13 +747,13 @@ export default function PlayScreenPage() {
               {playData.players.map((player) => (
                 <div
                   key={player.id}
-                  className="flex items-center justify-between rounded-xl border border-foreground/15 bg-white/90 px-3 py-2"
+                  className="flex items-center justify-between rounded-xl border border-foreground/15 bg-card/90 px-3 py-2"
                 >
                   <div className="flex items-center gap-1.5">
                     <span className="font-semibold">{player.username}</span>
                     {player.isHost ? <Crown className="size-3.5" /> : null}
                     {player.isYou ? (
-                      <Badge className="border border-foreground/20 bg-[#b7ffcf] text-foreground">
+                      <Badge className="border border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-400/50 dark:bg-emerald-500/20 dark:text-emerald-100">
                         You
                       </Badge>
                     ) : null}
